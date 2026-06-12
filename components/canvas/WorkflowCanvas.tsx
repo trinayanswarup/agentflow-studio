@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useRef, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import ReactFlow, {
   Background,
   Controls,
@@ -49,35 +50,24 @@ const DEMO_NODES: AgentNode[] = [
     },
   },
   {
-    id: 'fetch_1',
-    type: 'tool_call',
-    position: { x: 280, y: 240 },
-    data: {
-      label: 'Fetch Page',
-      config: {
-        toolName: 'web_fetch',
-        args: { url: '{{search_1_output}}' },
-      },
-    },
-  },
-  {
     id: 'extract_1',
     type: 'llm_call',
-    position: { x: 280, y: 360 },
+    position: { x: 280, y: 240 },
     data: {
       label: 'Extract Profile',
       config: {
-        system: 'You are a data extraction assistant. Return valid JSON only — no markdown, no prose.',
+        system:
+          'You are a data extraction assistant. Return valid JSON only — no markdown, no prose. Use the web_fetch tool to read a URL from the search results if you need more detail.',
         prompt:
-          'Extract company name, industry, employee count, headquarters, and a one-sentence description from the text below. Return as JSON.\n\nText:\n{{fetch_1_output}}',
-        tools: [],
+          'Extract company name, industry, employee count, headquarters, and a one-sentence description from the search results below. Return as JSON.\n\nSearch results:\n{{search_1_output}}',
+        tools: ['web_fetch'],
       },
     },
   },
   {
     id: 'email_1',
     type: 'llm_call',
-    position: { x: 280, y: 480 },
+    position: { x: 280, y: 380 },
     data: {
       label: 'Write Email',
       config: {
@@ -91,7 +81,7 @@ const DEMO_NODES: AgentNode[] = [
   {
     id: 'review_1',
     type: 'human_pause',
-    position: { x: 280, y: 600 },
+    position: { x: 280, y: 520 },
     data: {
       label: 'Human Review',
       config: { message: 'Review the draft email before it is finalized.' },
@@ -100,7 +90,7 @@ const DEMO_NODES: AgentNode[] = [
   {
     id: 'output_1',
     type: 'output',
-    position: { x: 280, y: 720 },
+    position: { x: 280, y: 640 },
     data: {
       label: 'Final Output',
       config: {
@@ -112,11 +102,10 @@ const DEMO_NODES: AgentNode[] = [
 
 const DEMO_EDGES: AgentEdge[] = [
   { id: 'e1', source: 'input_1', target: 'search_1' },
-  { id: 'e2', source: 'search_1', target: 'fetch_1' },
-  { id: 'e3', source: 'fetch_1', target: 'extract_1' },
-  { id: 'e4', source: 'extract_1', target: 'email_1' },
-  { id: 'e5', source: 'email_1', target: 'review_1' },
-  { id: 'e6', source: 'review_1', target: 'output_1' },
+  { id: 'e2', source: 'search_1', target: 'extract_1' },
+  { id: 'e3', source: 'extract_1', target: 'email_1' },
+  { id: 'e4', source: 'email_1', target: 'review_1' },
+  { id: 'e5', source: 'review_1', target: 'output_1' },
 ]
 
 // ── Inner canvas — must be inside ReactFlowProvider to use useReactFlow ───────
@@ -129,6 +118,7 @@ interface InnerProps {
 function WorkflowCanvasInner({ initialDemo, initialName }: InnerProps) {
   const reactFlowWrapper = useRef<HTMLDivElement>(null)
   const { screenToFlowPosition } = useReactFlow()
+  const router = useRouter()
 
   const [nodes, setNodes, onNodesChange] = useNodesState<AgentNodeData>(
     initialDemo ? DEMO_NODES : []
@@ -200,8 +190,10 @@ function WorkflowCanvasInner({ initialDemo, initialName }: InnerProps) {
         body: JSON.stringify({ name: definition.name, definition_json: definition }),
       })
       if (!res.ok) throw new Error(await res.text())
+      const saved = await res.json() as { workflow: { id: string } }
       setSaveStatus('saved')
-      setTimeout(() => setSaveStatus('idle'), 2500)
+      // Navigate to the run page after a brief visual confirmation.
+      setTimeout(() => router.push(`/run/${saved.workflow.id}`), 800)
     } catch {
       setSaveStatus('error')
       setTimeout(() => setSaveStatus('idle'), 3000)
