@@ -277,7 +277,7 @@ function WorkflowCanvasInner({ initialDemo, initialName }: InnerProps) {
           </ReactFlow>
         </div>
 
-        <NodeConfigPanel node={selectedNode} onUpdate={updateNodeData} />
+        <NodeConfigPanel node={selectedNode} onUpdate={updateNodeData} nodes={nodes} />
       </div>
     </div>
   )
