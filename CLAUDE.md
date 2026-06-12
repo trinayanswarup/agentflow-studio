@@ -11,7 +11,7 @@ This is a portfolio project targeting AI engineering internships (Fixxer, Enpal,
 - **Frontend**: Next.js 14 App Router, TypeScript, Tailwind CSS, React Flow
 - **Execution engine**: TypeScript, runs server-side in API routes
 - **LLM primary**: Groq — `llama-3.3-70b-versatile` via `groq` npm package
-- **LLM fallback**: Gemini 1.5 Flash via `@google/generative-ai`
+- **LLM fallback**: Gemini 2.5 Flash via `@google/generative-ai` (1.5 Flash was retired by Google; override with `GEMINI_MODEL` env var)
 - **Search**: Tavily API via `@tavily/core` (only — no DuckDuckGo)
 - **Validation**: Zod — all tool inputs, API route request bodies
 - **Database**: Supabase (PostgreSQL)
