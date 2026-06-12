@@ -28,7 +28,7 @@ import { nodeTypes } from './nodes'
 import { NodeSidebar } from './NodeSidebar'
 import { NodeConfigPanel } from './NodeConfigPanel'
 
-// ── Demo workflow — Lead Enrichment Pipeline ──────────────────────────────────
+// ── Demo workflow — Lead Qualification Pipeline ───────────────────────────────
 
 const DEMO_NODES: AgentNode[] = [
   {
@@ -45,7 +45,7 @@ const DEMO_NODES: AgentNode[] = [
       label: 'Web Search',
       config: {
         toolName: 'web_search',
-        args: { query: '{{input_1_output}} company overview site:linkedin.com OR crunchbase.com' },
+        args: { query: '{{input_1_output}} company funding employees industry site:crunchbase.com OR linkedin.com' },
       },
     },
   },
@@ -59,22 +59,24 @@ const DEMO_NODES: AgentNode[] = [
         system:
           'You are a data extraction assistant. Return valid JSON only — no markdown, no prose. Use the web_fetch tool to read a URL from the search results if you need more detail.',
         prompt:
-          'Extract company name, industry, employee count, headquarters, and a one-sentence description from the search results below. Return as JSON.\n\nSearch results:\n{{search_1_output}}',
+          'Extract company name, industry, employee count, funding stage, headquarters, and a one-sentence description from the search results below. Return as JSON.\n\nSearch results:\n{{search_1_output}}',
         tools: ['web_fetch'],
       },
     },
   },
   {
-    id: 'email_1',
-    type: 'llm_call',
+    id: 'score_1',
+    type: 'tool_call',
     position: { x: 280, y: 380 },
     data: {
-      label: 'Write Email',
+      label: 'Score Lead',
       config: {
-        system: 'You are an expert B2B sales copywriter. Write concise, personalized outreach emails — no generic filler.',
-        prompt:
-          'Write a personalized cold outreach email (max 150 words) for a sales rep reaching out to this company. Use the profile below to make it specific.\n\nCompany profile:\n{{extract_1_output}}',
-        tools: [],
+        toolName: 'evaluate_output',
+        args: {
+          output: '{{extract_1_output}}',
+          criteria:
+            'A qualified lead is a B2B SaaS or tech company with 50–500 employees, Series A or B funded, and an active engineering team. Score higher if the company matches more of these criteria.',
+        },
       },
     },
   },
@@ -84,7 +86,7 @@ const DEMO_NODES: AgentNode[] = [
     position: { x: 280, y: 520 },
     data: {
       label: 'Human Review',
-      config: { message: 'Review the draft email before it is finalized.' },
+      config: { message: 'Review the lead qualification score before finalizing.' },
     },
   },
   {
@@ -92,9 +94,9 @@ const DEMO_NODES: AgentNode[] = [
     type: 'output',
     position: { x: 280, y: 640 },
     data: {
-      label: 'Final Output',
+      label: 'Qualified Lead Report',
       config: {
-        template: '{{email_1_output}}\n\n---\nCompany profile:\n{{extract_1_output}}',
+        template: '{{score_1_output}}\n\n---\nCompany profile:\n{{extract_1_output}}',
       },
     },
   },
@@ -103,8 +105,8 @@ const DEMO_NODES: AgentNode[] = [
 const DEMO_EDGES: AgentEdge[] = [
   { id: 'e1', source: 'input_1', target: 'search_1' },
   { id: 'e2', source: 'search_1', target: 'extract_1' },
-  { id: 'e3', source: 'extract_1', target: 'email_1' },
-  { id: 'e4', source: 'email_1', target: 'review_1' },
+  { id: 'e3', source: 'extract_1', target: 'score_1' },
+  { id: 'e4', source: 'score_1', target: 'review_1' },
   { id: 'e5', source: 'review_1', target: 'output_1' },
 ]
 

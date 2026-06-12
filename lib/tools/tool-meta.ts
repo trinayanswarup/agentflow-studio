@@ -86,7 +86,7 @@ export const TOOL_META: Record<string, ToolMeta> = {
         label: 'Payload',
         description: 'Body to send. Valid JSON is sent as-is; plain text is wrapped.',
         required: true,
-        placeholder: '{{email_1_output}}',
+        placeholder: '{{extract_1_output}}',
       },
     ],
   },
@@ -100,7 +100,7 @@ export const TOOL_META: Record<string, ToolMeta> = {
         label: 'Output to evaluate',
         description: 'The text to score',
         required: true,
-        placeholder: '{{email_1_output}}',
+        placeholder: '{{extract_1_output}}',
       },
       {
         name: 'criteria',

@@ -7,6 +7,7 @@ import type {
   WorkflowNode,
 } from '@/lib/types'
 import { createContext, resolveTemplate, setNodeOutput } from '@/lib/engine/context'
+import { buildSlugMap } from '@/lib/engine/slugs'
 import { executeLlmCall } from '@/lib/engine/nodes/llm-call'
 import { executeToolCall } from '@/lib/engine/nodes/tool-call'
 import { executeCondition } from '@/lib/engine/nodes/condition'
@@ -112,6 +113,9 @@ export class WorkflowRunner extends EventEmitter {
 
   async run(input: string): Promise<RunResult> {
     const context = createContext(input, this.runId)
+    // Build slug aliases upfront so every node output is reachable via both
+    // its UUID key ({{nodeId_output}}) and a readable alias ({{slug_output}}).
+    const slugMap = buildSlugMap(this.definition.nodes)
     const trace: TraceEvent[] = []
     const runStarted = Date.now()
     let totalTokens = 0
@@ -178,6 +182,9 @@ export class WorkflowRunner extends EventEmitter {
       }
 
       setNodeOutput(context, current.id, result.output)
+      // Also register under the readable slug so {{slug_output}} templates work.
+      const slug = slugMap.get(current.id)
+      if (slug) context[`${slug}_output`] = result.output
       totalTokens += result.tokensUsed
 
       this.emitTrace(

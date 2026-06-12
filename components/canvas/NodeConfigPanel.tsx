@@ -5,6 +5,7 @@ import type { NodeType } from '@/lib/types'
 import type { AgentNode } from './types'
 import { NODE_LABELS } from './types'
 import { TOOL_META, TOOL_NAMES } from '@/lib/tools/tool-meta'
+import { labelToSlug, buildSlugMap } from '@/lib/engine/slugs'
 
 interface Props {
   node: AgentNode | null
@@ -127,6 +128,10 @@ function VariablesHint({
 }) {
   const [copied, setCopied] = useState<string | null>(null)
 
+  // Dedup slugs across all nodes so the panel matches what the runner resolves.
+  const slugMap = buildSlugMap(nodes.map((n) => ({ id: n.id, label: n.data.label })))
+
+  // Output nodes don't produce intermediate values worth referencing.
   const candidates = nodes.filter(
     (n) => n.id !== currentId && n.type !== ('output' as NodeType)
   )
@@ -139,31 +144,44 @@ function VariablesHint({
   }
 
   return (
-    <div className="flex flex-col gap-1">
+    <div className="flex flex-col gap-1.5">
       <span className="text-[10px] font-semibold uppercase tracking-wider text-gray-500">
         Available variables
       </span>
-      <div className="flex flex-col gap-0.5">
+      <div className="flex flex-col gap-px">
         {candidates.map((n) => {
-          const variable = `{{${n.id}_output}}`
+          const type = n.type as NodeType
+          const slug = slugMap.get(n.id) ?? labelToSlug(n.data.label)
+          const variable = `{{${slug}_output}}`
           const isCopied = copied === variable
           return (
             <button
               key={n.id}
               type="button"
               onClick={() => copy(variable)}
-              className="flex items-center justify-between rounded px-2 py-1 text-left hover:bg-gray-800"
+              className="group flex w-full flex-col rounded px-2 py-1.5 text-left hover:bg-gray-800"
               title="Click to copy"
             >
-              <code className="font-mono text-[11px] text-blue-400">{variable}</code>
-              <span className="ml-2 flex-shrink-0 text-[10px] text-gray-500">
-                {isCopied ? '✓ copied' : n.data.label}
-              </span>
+              <div className="flex items-center gap-1.5">
+                <code className="flex-1 truncate font-mono text-[11px] text-blue-400">
+                  {variable}
+                </code>
+                {isCopied && (
+                  <span className="flex-shrink-0 text-[10px] text-green-400">✓</span>
+                )}
+              </div>
+              <div className="flex items-center gap-1.5 text-[10px] text-gray-500">
+                <span className="truncate">{n.data.label}</span>
+                <span className="flex-shrink-0 text-gray-700">·</span>
+                <span className={`flex-shrink-0 ${NODE_TYPE_COLOR_CLS[type] ?? 'text-gray-500'}`}>
+                  {NODE_LABELS[type]}
+                </span>
+              </div>
             </button>
           )
         })}
       </div>
-      <p className="text-[10px] text-gray-600">Click a variable to copy it.</p>
+      <p className="text-[10px] text-gray-600">Click to copy. Both readable and UUID forms work.</p>
     </div>
   )
 }
@@ -365,7 +383,7 @@ export function NodeConfigPanel({ node, onUpdate, nodes = [] }: Props) {
         <Field label="Output template">
           <textarea
             className={`${inputCls} min-h-[100px] resize-y`}
-            placeholder="{{email_1_output}}\n\n---\n{{profile_1_output}}"
+            placeholder="{{score_1_output}}\n\n---\nProfile:\n{{extract_1_output}}"
             value={(c.template as string) ?? ''}
             onChange={(e) => setField('template', e.target.value)}
           />
