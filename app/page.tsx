@@ -1,101 +1,103 @@
-import Image from "next/image";
+import Link from 'next/link'
 
-export default function Home() {
+const STACK = [
+  { label: 'Next.js 14', color: 'bg-black text-white' },
+  { label: 'TypeScript', color: 'bg-blue-700 text-white' },
+  { label: 'React Flow', color: 'bg-purple-700 text-white' },
+  { label: 'Groq LLM', color: 'bg-orange-600 text-white' },
+  { label: 'Supabase', color: 'bg-green-700 text-white' },
+  { label: 'Tailwind CSS', color: 'bg-cyan-700 text-white' },
+]
+
+export default function LandingPage() {
   return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="https://nextjs.org/icons/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              app/page.tsx
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+    <div className="min-h-screen bg-gray-950 text-white">
+      <div className="mx-auto max-w-3xl px-6 py-24">
+        {/* Title */}
+        <h1 className="mb-2 text-4xl font-bold tracking-tight text-white">
+          AgentFlow Studio
+        </h1>
+        <p className="mb-8 text-sm font-medium text-gray-500 uppercase tracking-wider">
+          Visual AI Workflow Builder
+        </p>
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
+        {/* Description */}
+        <p className="mb-10 text-lg leading-relaxed text-gray-300">
+          AgentFlow Studio is a full-stack AI engineering project: drag nodes onto a canvas,
+          wire them together, and run them. The execution engine walks the graph, calls LLMs
+          via Groq (with Gemini fallback), invokes tools like web search and web fetch, streams
+          live trace events over SSE, handles human-in-the-loop review pauses, and stores
+          every run in Supabase &mdash; all running server-side inside Next.js API routes.
+        </p>
+
+        {/* What it proves */}
+        <div className="mb-10">
+          <h2 className="mb-4 text-xs font-semibold uppercase tracking-wider text-gray-500">
+            What this demonstrates
+          </h2>
+          <ul className="space-y-3">
+            <li className="flex gap-3 text-gray-300">
+              <span className="mt-1 flex-shrink-0 text-purple-400">▸</span>
+              <span>
+                <span className="font-semibold text-white">Agent infrastructure</span> &mdash;
+                custom execution engine with a function-calling loop, multi-tool orchestration,
+                conditional branching, human-in-the-loop pauses, and SSE streaming. Not a
+                LangChain wrapper &mdash; every layer built from scratch.
+              </span>
+            </li>
+            <li className="flex gap-3 text-gray-300">
+              <span className="mt-1 flex-shrink-0 text-green-400">▸</span>
+              <span>
+                <span className="font-semibold text-white">Eval framework</span> &mdash;
+                concurrent test-case runner with three scoring strategies (exact match,
+                contains, LLM-as-judge via Groq), aggregate pass-rate stats, and full
+                run history persisted to Supabase.
+              </span>
+            </li>
+          </ul>
+        </div>
+
+        {/* CTA buttons */}
+        <div className="mb-12 flex flex-wrap gap-3">
+          <Link
+            href="/editor?demo=true"
+            className="rounded bg-blue-600 px-6 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-blue-500"
+          >
+            Try the Demo
+          </Link>
           <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
+            href="https://github.com/trinayanswarup/agentflow-studio"
             target="_blank"
             rel="noopener noreferrer"
+            className="rounded border border-gray-700 px-6 py-2.5 text-sm font-semibold text-gray-300 transition-colors hover:border-gray-500 hover:text-white"
           >
-            <Image
-              className="dark:invert"
-              src="https://nextjs.org/icons/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
+            GitHub →
           </a>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+
+        {/* Stack badges */}
+        <div>
+          <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-gray-500">
+            Stack
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {STACK.map((s) => (
+              <span
+                key={s.label}
+                className={`rounded px-3 py-1 text-xs font-semibold ${s.color}`}
+              >
+                {s.label}
+              </span>
+            ))}
+          </div>
+        </div>
+
+        {/* Nav links */}
+        <nav className="mt-16 flex gap-6 border-t border-gray-800 pt-8 text-sm text-gray-500">
+          <Link href="/editor" className="hover:text-gray-300">Editor</Link>
+          <Link href="/eval" className="hover:text-gray-300">Eval Runner</Link>
+        </nav>
+      </div>
     </div>
-  );
+  )
 }

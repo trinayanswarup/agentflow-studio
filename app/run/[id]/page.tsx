@@ -113,6 +113,9 @@ export default function RunPage() {
     errorMessage,
     totalTokens,
     totalLatencyMs,
+    runId,
+    pendingHumanPause,
+    clearPendingHumanPause,
   } = useWorkflowExecution()
 
   // Derive StepStatus map (node highlight state) from nodeStates
@@ -244,6 +247,9 @@ export default function RunPage() {
             runStatus={runStatus}
             totalTokens={totalTokens}
             totalLatencyMs={totalLatencyMs}
+            runId={runId}
+            pendingHumanPause={pendingHumanPause}
+            onApprovalDecision={clearPendingHumanPause}
           />
         </div>
       </div>

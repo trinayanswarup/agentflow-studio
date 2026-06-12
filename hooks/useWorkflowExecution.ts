@@ -13,6 +13,13 @@ export type NodeExecutionState = {
 
 export type RunStatus = 'idle' | 'starting' | 'running' | 'completed' | 'failed'
 
+export type PendingHumanPause = {
+  nodeId: string
+  label: string
+  message: string
+  previousOutput: string
+}
+
 export interface UseWorkflowExecutionResult {
   start: (workflowId: string, input: string) => Promise<void>
   nodeStates: Map<string, NodeExecutionState>
@@ -22,6 +29,9 @@ export interface UseWorkflowExecutionResult {
   errorMessage: string | null
   totalTokens: number
   totalLatencyMs: number
+  runId: string | null
+  pendingHumanPause: PendingHumanPause | null
+  clearPendingHumanPause: () => void
 }
 
 export function useWorkflowExecution(): UseWorkflowExecutionResult {
@@ -32,6 +42,8 @@ export function useWorkflowExecution(): UseWorkflowExecutionResult {
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [totalTokens, setTotalTokens] = useState(0)
   const [totalLatencyMs, setTotalLatencyMs] = useState(0)
+  const [runId, setRunId] = useState<string | null>(null)
+  const [pendingHumanPause, setPendingHumanPause] = useState<PendingHumanPause | null>(null)
   const esRef = useRef<EventSource | null>(null)
 
   useEffect(() => () => { esRef.current?.close() }, [])
@@ -44,17 +56,21 @@ export function useWorkflowExecution(): UseWorkflowExecutionResult {
     })
   }
 
+  const clearPendingHumanPause = useCallback(() => setPendingHumanPause(null), [])
+
   const start = useCallback(async (workflowId: string, input: string) => {
-    // Reset
+    // Reset state.
     setNodeStates(new Map())
     setTraceEvents([])
     setFinalOutput(null)
     setErrorMessage(null)
     setTotalTokens(0)
     setTotalLatencyMs(0)
+    setRunId(null)
+    setPendingHumanPause(null)
     setRunStatus('starting')
 
-    let runId: string
+    let activeRunId: string
     try {
       const res = await fetch('/api/run', {
         method: 'POST',
@@ -66,7 +82,8 @@ export function useWorkflowExecution(): UseWorkflowExecutionResult {
         throw new Error(body)
       }
       const data = await res.json() as { runId: string }
-      runId = data.runId
+      activeRunId = data.runId
+      setRunId(activeRunId)
     } catch (err) {
       setRunStatus('failed')
       setErrorMessage(err instanceof Error ? err.message : String(err))
@@ -76,7 +93,7 @@ export function useWorkflowExecution(): UseWorkflowExecutionResult {
     setRunStatus('running')
     esRef.current?.close()
 
-    const es = new EventSource(`/api/stream/${runId}`)
+    const es = new EventSource(`/api/stream/${activeRunId}`)
     esRef.current = es
 
     es.onmessage = (e) => {
@@ -87,6 +104,7 @@ export function useWorkflowExecution(): UseWorkflowExecutionResult {
         case 'step_start':
           updateNodeState(event.nodeId, { status: 'running' })
           break
+
         case 'step_done':
           updateNodeState(event.nodeId, {
             status: 'done',
@@ -94,27 +112,42 @@ export function useWorkflowExecution(): UseWorkflowExecutionResult {
             tokens: event.tokens,
             output: event.output,
           })
+          // Clear the pause card when the paused node finishes.
+          setPendingHumanPause((prev) => (prev?.nodeId === event.nodeId ? null : prev))
           break
+
         case 'step_error':
           updateNodeState(event.nodeId, {
             status: 'error',
             latencyMs: event.latencyMs,
             error: event.error,
           })
+          setPendingHumanPause((prev) => (prev?.nodeId === event.nodeId ? null : prev))
           break
+
         case 'human_pause':
           updateNodeState(event.nodeId, { status: 'waiting' })
+          setPendingHumanPause({
+            nodeId: event.nodeId,
+            label: event.label,
+            message: event.message,
+            previousOutput: event.previousOutput,
+          })
           break
+
         case 'run_complete':
           setFinalOutput(event.output)
           setTotalTokens(event.totalTokens)
           setTotalLatencyMs(event.totalLatencyMs)
           setRunStatus('completed')
+          setPendingHumanPause(null)
           es.close()
           break
+
         case 'run_error':
           setErrorMessage(event.error)
           setRunStatus('failed')
+          setPendingHumanPause(null)
           es.close()
           break
       }
@@ -136,5 +169,8 @@ export function useWorkflowExecution(): UseWorkflowExecutionResult {
     errorMessage,
     totalTokens,
     totalLatencyMs,
+    runId,
+    pendingHumanPause,
+    clearPendingHumanPause,
   }
 }

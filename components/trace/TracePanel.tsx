@@ -3,6 +3,7 @@
 import { useEffect, useRef } from 'react'
 import type { TraceEvent } from '@/lib/types'
 import { TraceItem } from './TraceItem'
+import { HumanApprovalCard, type PendingPause } from '@/components/approval/HumanApprovalCard'
 
 interface Props {
   events: TraceEvent[]
@@ -10,14 +11,26 @@ interface Props {
   runStatus: 'idle' | 'starting' | 'running' | 'completed' | 'failed'
   totalTokens: number
   totalLatencyMs: number
+  runId?: string | null
+  pendingHumanPause?: PendingPause | null
+  onApprovalDecision?: () => void
 }
 
-export function TracePanel({ events, finalOutput, runStatus, totalTokens, totalLatencyMs }: Props) {
+export function TracePanel({
+  events,
+  finalOutput,
+  runStatus,
+  totalTokens,
+  totalLatencyMs,
+  runId,
+  pendingHumanPause,
+  onApprovalDecision,
+}: Props) {
   const bottomRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [events.length])
+  }, [events.length, pendingHumanPause])
 
   return (
     <div className="flex h-full flex-col overflow-hidden">
@@ -49,6 +62,16 @@ export function TracePanel({ events, finalOutput, runStatus, totalTokens, totalL
         {events.map((event, i) => (
           <TraceItem key={i} event={event} />
         ))}
+
+        {/* Approval card — shown inline after the human_pause trace item */}
+        {pendingHumanPause && runId && (
+          <HumanApprovalCard
+            runId={runId}
+            pause={pendingHumanPause}
+            onDecision={onApprovalDecision ?? (() => undefined)}
+          />
+        )}
+
         <div ref={bottomRef} />
       </div>
 

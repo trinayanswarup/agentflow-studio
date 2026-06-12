@@ -69,7 +69,10 @@ async function executeNode(
  *   const result = await runner.run('Nord Security')
  */
 export class WorkflowRunner extends EventEmitter {
-  constructor(private readonly definition: WorkflowDefinition) {
+  constructor(
+    private readonly definition: WorkflowDefinition,
+    private readonly runId?: string
+  ) {
     super()
   }
 
@@ -108,7 +111,7 @@ export class WorkflowRunner extends EventEmitter {
   }
 
   async run(input: string): Promise<RunResult> {
-    const context = createContext(input)
+    const context = createContext(input, this.runId)
     const trace: TraceEvent[] = []
     const runStarted = Date.now()
     let totalTokens = 0
@@ -147,7 +150,7 @@ export class WorkflowRunner extends EventEmitter {
           ? resolveTemplate(current.config.message, context)
           : 'Paused for human review'
         this.emitTrace(
-          { type: 'human_pause', nodeId: current.id, label: current.label, message, timestamp: now() },
+          { type: 'human_pause', nodeId: current.id, label: current.label, message, previousOutput, timestamp: now() },
           trace
         )
       }

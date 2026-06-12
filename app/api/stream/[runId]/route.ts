@@ -2,6 +2,9 @@ import { createServerClient } from '@/lib/supabase/server'
 import type { WorkflowDefinition, TraceEvent } from '@/lib/types'
 import { WorkflowRunner } from '@/lib/engine/runner'
 
+// Allow up to 5 min for runs with human_pause nodes (requires Vercel Pro).
+export const maxDuration = 300
+
 const encoder = new TextEncoder()
 
 function sseChunk(event: TraceEvent): Uint8Array {
@@ -61,7 +64,7 @@ export async function GET(
   }
 
   const definition = workflowRow.definition_json
-  const runner = new WorkflowRunner(definition)
+  const runner = new WorkflowRunner(definition, runId)
 
   const stream = new ReadableStream({
     start(controller) {

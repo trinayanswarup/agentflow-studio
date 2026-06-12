@@ -1,8 +1,10 @@
 import type { ExecutionContext } from '@/lib/types'
 
 /** Create the shared context for a run. `input` is a reserved key. */
-export function createContext(input: string): ExecutionContext {
-  return { input }
+export function createContext(input: string, runId?: string): ExecutionContext {
+  const ctx: ExecutionContext = { input }
+  if (runId) ctx['__runId'] = runId
+  return ctx
 }
 
 export function setNodeOutput(context: ExecutionContext, nodeId: string, value: unknown): void {

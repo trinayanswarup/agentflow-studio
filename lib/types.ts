@@ -141,7 +141,7 @@ export type TraceEvent =
       latencyMs: number
       timestamp: string
     }
-  | { type: 'human_pause'; nodeId: string; label: string; message: string; timestamp: string }
+  | { type: 'human_pause'; nodeId: string; label: string; message: string; previousOutput: string; timestamp: string }
   | {
       type: 'run_complete'
       output: string
