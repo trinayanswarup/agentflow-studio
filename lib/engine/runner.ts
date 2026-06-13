@@ -24,6 +24,13 @@ import '@/lib/tools/evaluate-output'
 /** Hard cap on steps per run — guards against cycles in the graph. */
 const MAX_STEPS = 100
 
+/**
+ * How many times a single node may be entered before the runner refuses to
+ * loop back to it. A `condition` whose branch points upstream is how a loop is
+ * expressed; this guard caps the retries.
+ */
+const MAX_ITERATIONS_PER_NODE = 3
+
 export interface RunResult {
   status: 'completed' | 'failed'
   output: string
@@ -111,6 +118,15 @@ export class WorkflowRunner extends EventEmitter {
     return next
   }
 
+  /** Resolve a condition's branch target without throwing if the edge is absent. */
+  private findBranchTarget(node: WorkflowNode, branch: 'true' | 'false'): WorkflowNode | null {
+    const edge = this.definition.edges.find(
+      (e) => e.source === node.id && e.sourceHandle === branch
+    )
+    if (!edge) return null
+    return this.definition.nodes.find((n) => n.id === edge.target) ?? null
+  }
+
   async run(input: string): Promise<RunResult> {
     const context = createContext(input, this.runId)
     // Build slug aliases upfront so every node output is reachable via both
@@ -136,6 +152,8 @@ export class WorkflowRunner extends EventEmitter {
     let previousOutput = input
     let finalOutput = input
     let steps = 0
+    // How many times each node has been entered — drives the loop guard.
+    const visitCounts = new Map<string, number>()
 
     while (current) {
       if (++steps > MAX_STEPS) {
@@ -143,6 +161,8 @@ export class WorkflowRunner extends EventEmitter {
         this.emitTrace({ type: 'run_error', error, timestamp: now() }, trace)
         return { status: 'failed', output: '', trace, totalTokens, totalLatencyMs: Date.now() - runStarted }
       }
+
+      visitCounts.set(current.id, (visitCounts.get(current.id) ?? 0) + 1)
 
       this.emitTrace(
         { type: 'step_start', nodeId: current.id, label: current.label, nodeType: current.type, timestamp: now() },
@@ -207,12 +227,36 @@ export class WorkflowRunner extends EventEmitter {
         break
       }
 
+      let next: WorkflowNode | null
       try {
-        current = this.findNextNode(current, result.branch)
+        next = this.findNextNode(current, result.branch)
       } catch (error) {
         this.emitTrace({ type: 'run_error', error: errorMessage(error), timestamp: now() }, trace)
         return { status: 'failed', output: '', trace, totalTokens, totalLatencyMs: Date.now() - runStarted }
       }
+
+      // Loop guard: if the next node has already been entered the maximum number
+      // of times, refuse to re-enter it. For a condition (the only way a loop is
+      // expressed), take the other/forward branch instead; otherwise end the run.
+      if (next && (visitCounts.get(next.id) ?? 0) >= MAX_ITERATIONS_PER_NODE) {
+        this.emitTrace(
+          {
+            type: 'loop_limit',
+            nodeId: next.id,
+            label: next.label,
+            nodeType: next.type,
+            iterations: visitCounts.get(next.id) ?? 0,
+            timestamp: now(),
+          },
+          trace
+        )
+        next =
+          current.type === 'condition'
+            ? this.findBranchTarget(current, result.branch === 'true' ? 'false' : 'true')
+            : null
+      }
+
+      current = next
       if (!current) finalOutput = previousOutput
     }
 

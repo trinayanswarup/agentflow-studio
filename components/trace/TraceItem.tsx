@@ -80,6 +80,19 @@ export function TraceItem({ event }: Props) {
         </div>
       )
 
+    case 'loop_limit':
+      return (
+        <div className="flex items-start gap-2 py-1.5 text-sm">
+          <span className="mt-0.5 text-base leading-none text-amber-400">↻</span>
+          <div>
+            <span className="font-medium text-amber-300">Loop limit reached</span>
+            <div className="mt-0.5 text-[11px] text-gray-400">
+              {event.label} hit {event.iterations} iterations — taking the forward path.
+            </div>
+          </div>
+        </div>
+      )
+
     case 'run_complete':
       return (
         <div className="flex items-start gap-2 border-t border-gray-800 pt-2 text-sm">

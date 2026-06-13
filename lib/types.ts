@@ -143,6 +143,16 @@ export type TraceEvent =
     }
   | { type: 'human_pause'; nodeId: string; label: string; message: string; previousOutput: string; timestamp: string }
   | {
+      type: 'loop_limit'
+      /** The node the runner refused to re-enter (the loop target). */
+      nodeId: string
+      label: string
+      nodeType: NodeType
+      /** How many times the node had already been entered when the loop was cut. */
+      iterations: number
+      timestamp: string
+    }
+  | {
       type: 'run_complete'
       output: string
       totalLatencyMs: number

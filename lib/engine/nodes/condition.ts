@@ -18,9 +18,15 @@ function unquote(value: string): string {
 }
 
 function asNumber(value: string): number | null {
-  if (value === '') return null
-  const n = Number(value)
-  return Number.isFinite(n) ? n : null
+  if (value.trim() === '') return null
+  // Direct numeric strings ("7", "  3.5 ") parse cleanly.
+  const direct = Number(value)
+  if (Number.isFinite(direct)) return direct
+  // Fallback: pull the first number out of a structured string. This lets a
+  // condition compare against an LLM-judge result like {"score":7,"reasoning":…}
+  // — evaluate_output stringifies score first, so the first number is the score.
+  const match = value.match(/-?\d+(?:\.\d+)?/)
+  return match ? Number(match[0]) : null
 }
 
 function compare(left: string, operator: string, right: string): boolean {
