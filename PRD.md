@@ -1,16 +1,19 @@
 # AgentFlow Studio — Product Requirements Document
 
 ## One-sentence pitch
+
 AgentFlow Studio lets users visually build AI automations — each box is a step: call an LLM, call a tool, check a condition, wait for human approval, or return output — and when a workflow runs, the execution engine walks the graph, passes context between steps, streams live trace events to the frontend, handles errors, and stores each run for evaluation.
 
 ---
 
 ## Goal
+
 Build an internship portfolio weapon that proves you built AI infrastructure — not a ChatGPT wrapper. This project demonstrates agent workflows, tool calling, orchestration, live tracing, evals, human-in-the-loop, and failure handling.
 
 ---
 
 ## What this is NOT
+
 - No login, no teams, no billing, no permissions
 - No marketplace, no mobile perfection, no 100 tools
 - Goal: internship weapon, not SaaS product
@@ -18,13 +21,14 @@ Build an internship portfolio weapon that proves you built AI infrastructure —
 ---
 
 ## Target companies
-| Company | Location | Why AgentFlow fits |
-|---|---|---|
-| Fixxer | Remote | Explicitly wants Claude Code, MCP, agentic orchestration |
-| Enpal | Berlin | Agents in production, needs trace debugging + tool fix skills |
-| 10Clouds | Warsaw | Builds lead qualification workflows for financial clients |
-| AI Opener | Amsterdam | Wants eval frameworks, tool design, agent orchestration |
-| CybelAngel | Paris | Lists Claude Code + rapid AI automation prototyping |
+
+| Company    | Location  | Why AgentFlow fits                                            |
+| ---------- | --------- | ------------------------------------------------------------- |
+| Fixxer     | Remote    | Explicitly wants Claude Code, MCP, agentic orchestration      |
+| Enpal      | Berlin    | Agents in production, needs trace debugging + tool fix skills |
+| 10Clouds   | Warsaw    | Builds lead qualification workflows for financial clients     |
+| AI Opener  | Amsterdam | Wants eval frameworks, tool design, agent orchestration       |
+| CybelAngel | Paris     | Lists Claude Code + rapid AI automation prototyping           |
 
 ---
 
@@ -50,16 +54,17 @@ SSE → live trace panel in browser
 
 ## Node types — exactly 6
 
-| Node | Description |
-|---|---|
-| `input` | Entry point, receives user string |
-| `llm_call` | Sends prompt to LLM with tool calling enabled, loops until text response |
-| `tool_call` | Directly calls a specific tool without LLM decision |
-| `condition` | Evaluates JS expression against context, takes true/false branch |
-| `human_pause` | Stops execution, shows output in UI, waits for approve/reject/edit |
-| `output` | End point, returns final result |
+| Node          | Description                                                              |
+| ------------- | ------------------------------------------------------------------------ |
+| `input`       | Entry point, receives user string                                        |
+| `llm_call`    | Sends prompt to LLM with tool calling enabled, loops until text response |
+| `tool_call`   | Directly calls a specific tool without LLM decision                      |
+| `condition`   | Evaluates JS expression against context, takes true/false branch         |
+| `human_pause` | Stops execution, shows output in UI, waits for approve/reject/edit       |
+| `output`      | End point, returns final result                                          |
 
 ### Node config shape
+
 ```json
 {
   "id": "extract_company",
@@ -73,21 +78,22 @@ SSE → live trace panel in browser
 
 ## Tool registry — exactly 5 tools
 
-| Tool | Description |
-|---|---|
-| `web_fetch` | Fetches a URL, returns cleaned text, max 2000 chars |
-| `web_search` | Tavily API — top 5 results, agent-optimized output |
-| `extract_json` | Given text + schema, asks LLM to extract structured data |
-| `send_webhook` | HTTP POST to any URL with JSON body |
+| Tool              | Description                                              |
+| ----------------- | -------------------------------------------------------- |
+| `web_fetch`       | Fetches a URL, returns cleaned text, max 2000 chars      |
+| `web_search`      | Tavily API — top 5 results, agent-optimized output       |
+| `extract_json`    | Given text + schema, asks LLM to extract structured data |
+| `send_webhook`    | HTTP POST to any URL with JSON body                      |
 | `evaluate_output` | Given output + rubric, LLM scores it 1–10 with reasoning |
 
 ### Tool interface
+
 ```typescript
 interface Tool {
-  name: string
-  description: string
-  input_schema: JSONSchema
-  execute(input: Record<string, unknown>): Promise<string>
+  name: string;
+  description: string;
+  input_schema: JSONSchema;
+  execute(input: Record<string, unknown>): Promise<string>;
 }
 ```
 
@@ -96,22 +102,26 @@ interface Tool {
 ## Screens — exactly 4
 
 ### 1. Landing page
+
 - Explain the project
 - Demo button → pre-loads lead enrichment workflow
 - Link to GitHub
 
 ### 2. Workflow editor
+
 - React Flow canvas
 - Sidebar: drag node types onto canvas
 - Click node → right panel config
 - Save workflow button
 
 ### 3. Run page
+
 - Left: workflow canvas, nodes light green/red as they execute
 - Right: live trace timeline via SSE
 - Human approval UI appears inline on pause
 
 ### 4. Eval page
+
 - Textarea for test cases JSON
 - Run button
 - Results table: input / expected / actual / score / pass/fail
@@ -120,6 +130,7 @@ interface Tool {
 ---
 
 ## Live trace panel format
+
 ```
 ✅ Input received — "Nord Security"
 ✅ Web search completed — 3 results found (142ms, 0 tokens)
@@ -130,11 +141,13 @@ interface Tool {
    → "Hi [Name], I noticed Nord Security recently expanded..."
 ⏸  Waiting for human approval
 ```
+
 Each trace item: node name, status, latency, tokens used, output preview, error if failed.
 
 ---
 
 ## Human approval flow
+
 1. Workflow pauses at `human_pause` node
 2. UI shows current output with three buttons: **Approve / Edit / Reject**
 3. Approve → workflow continues
@@ -144,6 +157,7 @@ Each trace item: node name, status, latency, tokens used, output preview, error 
 ---
 
 ## Eval framework
+
 ```json
 [
   { "input": "Nord Security", "expected": "cybersecurity" },
@@ -151,6 +165,7 @@ Each trace item: node name, status, latency, tokens used, output preview, error 
   { "input": "Spotify", "expected": "music streaming" }
 ]
 ```
+
 - Runs all cases concurrently (limit: 3)
 - Scoring strategies: `exact_match`, `contains`, `llm_judge`
 - Results table + aggregate stats
@@ -163,13 +178,14 @@ Each trace item: node name, status, latency, tokens used, output preview, error 
 ```sql
 workflows: id, name, definition_json, created_at
 runs: id, workflow_id, input, status, created_at, completed_at
-run_steps: id, run_id, node_id, node_label, status, output, 
+run_steps: id, run_id, node_id, node_label, status, output,
            error, latency_ms, tokens_used, created_at
 ```
 
 ---
 
 ## Demo workflow — Lead Enrichment Pipeline
+
 ```
 Input: company name (e.g. "Nord Security")
     ↓
@@ -185,26 +201,29 @@ human_pause: shows draft email → user approves or edits
     ↓
 Output: final email + company profile JSON
 ```
+
 Runtime: ~40 seconds. Produces a real personalised email for any company name. This is the interview demo.
 
 ---
 
 ## Tech stack
-| Layer | Tech |
-|---|---|
-| Frontend | Next.js 14, TypeScript, Tailwind, React Flow |
-| Execution | TypeScript execution engine, Groq SDK |
-| LLM primary | Groq llama-3.3-70b-versatile (function calling) |
-| LLM fallback | Gemini 1.5 Flash (long context) |
-| Search | Tavily API — only provider (free, 1000 req/month) |
-| Validation | Zod — tool inputs + API route bodies |
-| Scripts | tsx — run TypeScript directly |
-| Database | Supabase free tier |
-| Deploy | Vercel |
+
+| Layer        | Tech                                              |
+| ------------ | ------------------------------------------------- |
+| Frontend     | Next.js 14, TypeScript, Tailwind, React Flow      |
+| Execution    | TypeScript execution engine, Groq SDK             |
+| LLM primary  | Groq llama-3.3-70b-versatile (function calling)   |
+| LLM fallback | Gemini 1.5 Flash (long context)                   |
+| Search       | Tavily API — only provider (free, 1000 req/month) |
+| Validation   | Zod — tool inputs + API route bodies              |
+| Scripts      | tsx — run TypeScript directly                     |
+| Database     | Supabase free tier                                |
+| Deploy       | Vercel                                            |
 
 ---
 
 ## Environment variables
+
 ```
 GROQ_API_KEY          # groq.com — free
 GEMINI_API_KEY        # aistudio.google.com — free
@@ -216,19 +235,50 @@ SUPABASE_SERVICE_ROLE_KEY   # server-side only, never exposed
 
 ---
 
-## Build sessions — 6 sessions
-| Session | Focus |
-|---|---|
-| 1 | Execution engine in pure TypeScript, no UI, hardcoded workflow JSON, CLI run |
-| 2 | SSE API route + minimal Next.js page showing raw stream |
-| 3 | Workflow canvas with React Flow |
-| 4 | Live trace panel UI |
-| 5 | Eval runner |
-| 6 | Human-pause UI, landing page, deploy |
+## Build sessions
+
+### Phase 1 — Core engine + UI (COMPLETE)
+
+| Session | Focus                                                                        | Status  |
+| ------- | ---------------------------------------------------------------------------- | ------- |
+| 1       | Execution engine in pure TypeScript, no UI, hardcoded workflow JSON, CLI run | ✅ done |
+| 2       | SSE API route + minimal Next.js page showing raw stream                      | ✅ done |
+| 3       | Workflow canvas with React Flow                                              | ✅ done |
+| 4       | Live trace panel UI                                                          | ✅ done |
+| 5       | Eval runner                                                                  | ✅ done |
+| 6       | Human-pause UI, landing page                                                 | ✅ done |
+
+### Phase 2 — Templates, more workflows, UX, polish
+
+| Session | Focus                                                                                                              | Status |
+| ------- | ------------------------------------------------------------------------------------------------------------------ | ------ |
+| 7       | Templates system + gallery (rename demo→template throughout)                                                       | ⬜     |
+| 8       | Loop engine support + two new workflows (CyberOps domain-risk, self-correcting research)                           | ⬜     |
+| 9       | UX clarity pass (node-state legend, empty states, connection-rule hints, "How it works" page)                      | ⬜     |
+| 10      | Visual design pass (frontend-design skill: typography, spacing, color, landing page that shows a running workflow) | ⬜     |
+| 11      | README rewrite (architecture decisions, war stories, failure modes, how to add a node)                             | ⬜     |
+| 12      | Interactive guided overlay + deploy + record GIFs                                                                  | ⬜     |
+
+### Templates that ship with the product
+
+- **Hello (starter)** — `input → llm_call → output`. The 5-second first-run so a new user sees something work immediately.
+- **Lead Qualification** — `input → web_search → llm_call (extract) → tool_call (evaluate_output) → human_pause → output`. Sales/lead-gen (10Clouds, AI Opener).
+- **CyberOps Domain Risk Check** — `input (domain) → web_search → llm_call (extract risk signals) → tool_call (evaluate_output, risk score) → condition (score ≥ 7?) → high-risk: human_pause (analyst review); low-risk: skip → output`. Security (CybelAngel, Mediatech). Shows condition branching.
+- **Self-Correcting Research Agent** — `input (topic) → web_search → llm_call (write brief) → tool_call (evaluate_output, quality score) → condition (score < 7?) → if low: loop back to web_search with refined query and retry; if good: → output`. Shows eval + loop + retry working together.
+
+### Connection rules (surfaced in the UI)
+
+- `input` has one output, no input.
+- `output` has one input, no output.
+- `condition` has one input and TWO outputs: `true` and `false`.
+- `human_pause` has one input, one output.
+- `llm_call` / `tool_call` have one input, one output.
+- A node's output may be referenced anywhere downstream via `{{slug_output}}` (readable) or `{{nodeId_output}}` (UUID); both resolve.
 
 ---
 
 ## Success criteria
+
 - [ ] Lead enrichment demo runs end-to-end in ~40s
 - [ ] Live trace panel updates in real time
 - [ ] Human approval pause works (approve/edit/reject)
