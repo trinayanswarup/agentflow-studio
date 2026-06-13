@@ -18,114 +18,32 @@ import 'reactflow/dist/style.css'
 import type { NodeType } from '@/lib/types'
 import {
   type AgentNode,
-  type AgentEdge,
   type AgentNodeData,
   DEFAULT_CONFIGS,
   NODE_LABELS,
   serializeWorkflow,
+  deserializeWorkflow,
 } from './types'
+import type { WorkflowDefinition } from '@/lib/types'
 import { nodeTypes } from './nodes'
 import { NodeSidebar } from './NodeSidebar'
 import { NodeConfigPanel } from './NodeConfigPanel'
 
-// ── Demo workflow — Lead Qualification Pipeline ───────────────────────────────
-
-const DEMO_NODES: AgentNode[] = [
-  {
-    id: 'input_1',
-    type: 'input',
-    position: { x: 280, y: 0 },
-    data: { label: 'Company Name', config: { placeholder: 'e.g. Nord Security' } },
-  },
-  {
-    id: 'search_1',
-    type: 'tool_call',
-    position: { x: 280, y: 120 },
-    data: {
-      label: 'Web Search',
-      config: {
-        toolName: 'web_search',
-        args: { query: '{{input_1_output}} company funding employees industry site:crunchbase.com OR linkedin.com' },
-      },
-    },
-  },
-  {
-    id: 'extract_1',
-    type: 'llm_call',
-    position: { x: 280, y: 240 },
-    data: {
-      label: 'Extract Profile',
-      config: {
-        system:
-          'You are a data extraction assistant. Return valid JSON only — no markdown, no prose. Use the web_fetch tool to read a URL from the search results if you need more detail.',
-        prompt:
-          'Extract company name, industry, employee count, funding stage, headquarters, and a one-sentence description from the search results below. Return as JSON.\n\nSearch results:\n{{search_1_output}}',
-        tools: ['web_fetch'],
-      },
-    },
-  },
-  {
-    id: 'score_1',
-    type: 'tool_call',
-    position: { x: 280, y: 380 },
-    data: {
-      label: 'Score Lead',
-      config: {
-        toolName: 'evaluate_output',
-        args: {
-          output: '{{extract_1_output}}',
-          criteria:
-            'A qualified lead is a B2B SaaS or tech company with 50–500 employees, Series A or B funded, and an active engineering team. Score higher if the company matches more of these criteria.',
-        },
-      },
-    },
-  },
-  {
-    id: 'review_1',
-    type: 'human_pause',
-    position: { x: 280, y: 520 },
-    data: {
-      label: 'Human Review',
-      config: { message: 'Review the lead qualification score before finalizing.' },
-    },
-  },
-  {
-    id: 'output_1',
-    type: 'output',
-    position: { x: 280, y: 640 },
-    data: {
-      label: 'Qualified Lead Report',
-      config: {
-        template: '{{score_1_output}}\n\n---\nCompany profile:\n{{extract_1_output}}',
-      },
-    },
-  },
-]
-
-const DEMO_EDGES: AgentEdge[] = [
-  { id: 'e1', source: 'input_1', target: 'search_1' },
-  { id: 'e2', source: 'search_1', target: 'extract_1' },
-  { id: 'e3', source: 'extract_1', target: 'score_1' },
-  { id: 'e4', source: 'score_1', target: 'review_1' },
-  { id: 'e5', source: 'review_1', target: 'output_1' },
-]
-
 // ── Inner canvas — must be inside ReactFlowProvider to use useReactFlow ───────
 
 interface InnerProps {
-  initialDemo: boolean
+  initialDefinition: WorkflowDefinition | undefined
   initialName: string
 }
 
-function WorkflowCanvasInner({ initialDemo, initialName }: InnerProps) {
+function WorkflowCanvasInner({ initialDefinition, initialName }: InnerProps) {
   const reactFlowWrapper = useRef<HTMLDivElement>(null)
   const { screenToFlowPosition } = useReactFlow()
   const router = useRouter()
 
-  const [nodes, setNodes, onNodesChange] = useNodesState<AgentNodeData>(
-    initialDemo ? DEMO_NODES : []
-  )
-  const [edges, setEdges, onEdgesChange] = useEdgesState(initialDemo ? DEMO_EDGES : [])
+  const initial = initialDefinition ? deserializeWorkflow(initialDefinition) : null
+  const [nodes, setNodes, onNodesChange] = useNodesState<AgentNodeData>(initial?.nodes ?? [])
+  const [edges, setEdges, onEdgesChange] = useEdgesState(initial?.edges ?? [])
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null)
   const [workflowName, setWorkflowName] = useState(initialName)
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
@@ -255,7 +173,7 @@ function WorkflowCanvasInner({ initialDemo, initialName }: InnerProps) {
             onDrop={onDrop}
             onDragOver={onDragOver}
             nodeTypes={nodeTypes}
-            fitView={initialDemo}
+            fitView={!!initialDefinition}
             deleteKeyCode="Delete"
             className="bg-gray-950"
           >
@@ -288,17 +206,17 @@ function WorkflowCanvasInner({ initialDemo, initialName }: InnerProps) {
 // ── Public export — wraps inner canvas with ReactFlowProvider ─────────────────
 
 interface WorkflowCanvasProps {
-  initialDemo?: boolean
+  initialDefinition?: WorkflowDefinition
   initialName?: string
 }
 
 export default function WorkflowCanvas({
-  initialDemo = false,
+  initialDefinition,
   initialName = 'My Workflow',
 }: WorkflowCanvasProps) {
   return (
     <ReactFlowProvider>
-      <WorkflowCanvasInner initialDemo={initialDemo} initialName={initialName} />
+      <WorkflowCanvasInner initialDefinition={initialDefinition} initialName={initialName} />
     </ReactFlowProvider>
   )
 }

@@ -60,10 +60,10 @@ export default function LandingPage() {
         {/* CTA buttons */}
         <div className="mb-12 flex flex-wrap gap-3">
           <Link
-            href="/editor?demo=true"
+            href="/templates"
             className="rounded bg-blue-600 px-6 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-blue-500"
           >
-            Try the Demo
+            Browse Templates
           </Link>
           <a
             href="https://github.com/trinayanswarup/agentflow-studio"
@@ -94,6 +94,7 @@ export default function LandingPage() {
 
         {/* Nav links */}
         <nav className="mt-16 flex gap-6 border-t border-gray-800 pt-8 text-sm text-gray-500">
+          <Link href="/templates" className="hover:text-gray-300">Templates</Link>
           <Link href="/editor" className="hover:text-gray-300">Editor</Link>
           <Link href="/eval" className="hover:text-gray-300">Eval Runner</Link>
         </nav>

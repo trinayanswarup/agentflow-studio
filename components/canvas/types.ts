@@ -70,3 +70,27 @@ export function serializeWorkflow(
     })),
   }
 }
+
+/** Reverse of serializeWorkflow — converts a WorkflowDefinition into React Flow state. */
+export function deserializeWorkflow(definition: WorkflowDefinition): {
+  nodes: AgentNode[]
+  edges: AgentEdge[]
+} {
+  const nodes: AgentNode[] = definition.nodes.map((n) => ({
+    id: n.id,
+    type: n.type,
+    position: n.position ?? { x: 0, y: 0 },
+    data: {
+      label: n.label,
+      config: n.config as Record<string, unknown>,
+    },
+  }))
+  const edges: AgentEdge[] = definition.edges.map((e) => ({
+    id: e.id,
+    source: e.source,
+    target: e.target,
+    type: 'smoothstep',
+    ...(e.sourceHandle != null ? { sourceHandle: e.sourceHandle } : {}),
+  }))
+  return { nodes, edges }
+}

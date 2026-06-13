@@ -1,4 +1,6 @@
 import dynamic from 'next/dynamic'
+import type { WorkflowDefinition } from '@/lib/types'
+import { getTemplate } from '@/lib/templates'
 
 // WorkflowCanvas uses ReactFlow which requires browser APIs — load client-side only.
 const WorkflowCanvas = dynamic(() => import('@/components/canvas/WorkflowCanvas'), {
@@ -11,16 +13,21 @@ const WorkflowCanvas = dynamic(() => import('@/components/canvas/WorkflowCanvas'
 })
 
 interface EditorPageProps {
-  searchParams: { demo?: string; name?: string }
+  searchParams: { template?: string; demo?: string; name?: string }
 }
 
 export default function EditorPage({ searchParams }: EditorPageProps) {
-  const isDemo = searchParams.demo === 'true'
-  const initialName = isDemo ? 'Lead Enrichment Pipeline' : (searchParams.name ?? 'My Workflow')
+  // ?demo=true is a legacy alias for the lead-qualification template.
+  const templateId =
+    searchParams.template ?? (searchParams.demo === 'true' ? 'lead-qualification' : undefined)
+  const template = templateId ? getTemplate(templateId) : undefined
+
+  const initialDefinition: WorkflowDefinition | undefined = template?.definition
+  const initialName = template?.name ?? searchParams.name ?? 'My Workflow'
 
   return (
     <div className="h-screen bg-gray-950 text-white">
-      <WorkflowCanvas initialDemo={isDemo} initialName={initialName} />
+      <WorkflowCanvas initialDefinition={initialDefinition} initialName={initialName} />
     </div>
   )
 }
