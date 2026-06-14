@@ -22,6 +22,7 @@ export type PendingHumanPause = {
 
 export interface UseWorkflowExecutionResult {
   start: (workflowId: string, input: string) => Promise<void>
+  reset: () => void
   nodeStates: Map<string, NodeExecutionState>
   traceEvents: TraceEvent[]
   finalOutput: string | null
@@ -57,6 +58,19 @@ export function useWorkflowExecution(): UseWorkflowExecutionResult {
   }
 
   const clearPendingHumanPause = useCallback(() => setPendingHumanPause(null), [])
+
+  const reset = useCallback(() => {
+    esRef.current?.close()
+    setNodeStates(new Map())
+    setTraceEvents([])
+    setFinalOutput(null)
+    setErrorMessage(null)
+    setTotalTokens(0)
+    setTotalLatencyMs(0)
+    setRunId(null)
+    setPendingHumanPause(null)
+    setRunStatus('idle')
+  }, [])
 
   const start = useCallback(async (workflowId: string, input: string) => {
     // Reset state.
@@ -162,6 +176,7 @@ export function useWorkflowExecution(): UseWorkflowExecutionResult {
 
   return {
     start,
+    reset,
     nodeStates,
     traceEvents,
     finalOutput,

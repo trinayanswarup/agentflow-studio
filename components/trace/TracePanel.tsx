@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { TraceEvent } from '@/lib/types'
 import { TraceItem } from './TraceItem'
 import { HumanApprovalCard, type PendingPause } from '@/components/approval/HumanApprovalCard'
@@ -14,6 +14,7 @@ interface Props {
   runId?: string | null
   pendingHumanPause?: PendingPause | null
   onApprovalDecision?: () => void
+  onRunAgain?: () => void
 }
 
 function StatusPill({ runStatus }: { runStatus: Props['runStatus'] }) {
@@ -53,8 +54,18 @@ export function TracePanel({
   runId,
   pendingHumanPause,
   onApprovalDecision,
+  onRunAgain,
 }: Props) {
   const bottomRef = useRef<HTMLDivElement>(null)
+  const [copied, setCopied] = useState(false)
+
+  function handleCopy() {
+    if (!finalOutput) return
+    void navigator.clipboard.writeText(finalOutput).then(() => {
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    })
+  }
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -123,6 +134,24 @@ export function TracePanel({
           <pre className="scroll-slim max-h-52 overflow-y-auto whitespace-pre-wrap break-words rounded-lg border border-gray-800 bg-gray-950 p-3 font-mono text-xs leading-relaxed text-gray-200">
             {finalOutput}
           </pre>
+          <div className="mt-3 flex gap-2">
+            <button
+              type="button"
+              onClick={handleCopy}
+              className="flex-1 rounded-lg bg-accent-600 px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-accent-500"
+            >
+              {copied ? 'Copied!' : 'Copy Output'}
+            </button>
+            {onRunAgain && (
+              <button
+                type="button"
+                onClick={onRunAgain}
+                className="flex-1 rounded-lg border border-gray-700 px-3 py-1.5 text-xs font-semibold text-gray-300 transition-colors hover:border-gray-600 hover:text-white"
+              >
+                Run Again
+              </button>
+            )}
+          </div>
         </div>
       )}
     </div>

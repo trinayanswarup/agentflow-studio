@@ -142,14 +142,9 @@ export default function LandingPage() {
           <Link href="/templates" className="transition-colors hover:text-gray-100">
             Templates
           </Link>
-          <a
-            href="https://github.com/trinayanswarup/agentflow-studio"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="transition-colors hover:text-gray-100"
-          >
-            GitHub
-          </a>
+          <Link href="/eval" className="transition-colors hover:text-gray-100">
+            Eval Runner
+          </Link>
         </nav>
       </header>
 

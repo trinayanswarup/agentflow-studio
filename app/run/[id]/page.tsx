@@ -107,6 +107,7 @@ export default function RunPage() {
 
   const {
     start,
+    reset,
     nodeStates,
     traceEvents,
     finalOutput,
@@ -159,6 +160,11 @@ export default function RunPage() {
     },
     [handleRun]
   )
+
+  const handleRunAgain = useCallback(() => {
+    reset()
+    setTimeout(() => inputRef.current?.focus(), 0)
+  }, [reset])
 
   if (fetchError) {
     return (
@@ -254,6 +260,7 @@ export default function RunPage() {
             runId={runId}
             pendingHumanPause={pendingHumanPause}
             onApprovalDecision={clearPendingHumanPause}
+            onRunAgain={handleRunAgain}
           />
         </div>
       </div>

@@ -153,6 +153,7 @@ function WorkflowCanvasInner({ initialDefinition, initialName }: InnerProps) {
         </button>
         <span className="ml-auto flex items-center gap-4 text-[11px] text-gray-500">
           <a href="/how-it-works" className="hover:text-gray-300">How it works</a>
+          <a href="/" className="hover:text-gray-300">Home</a>
           <span>{nodes.length} nodes · {edges.length} edges</span>
         </span>
       </div>
