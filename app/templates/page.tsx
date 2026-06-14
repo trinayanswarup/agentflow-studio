@@ -12,7 +12,7 @@ const CATEGORY_COLOR: Record<string, string> = {
 
 export default function TemplatesPage() {
   return (
-    <div className="min-h-screen bg-gray-950 text-gray-100">
+    <div className="min-h-screen bg-gradient-to-b from-black to-[#1c1c1c] text-gray-100">
       <div className="mx-auto max-w-5xl px-6 py-16">
         {/* Header */}
         <Link href="/" className="text-sm text-gray-500 transition-colors hover:text-gray-300">
@@ -49,7 +49,7 @@ export default function TemplatesPage() {
                 </span>
                 <Link
                   href={`/editor?template=${t.id}`}
-                  className="rounded-lg bg-accent-600 px-4 py-1.5 text-sm font-semibold text-white transition-colors hover:bg-accent-500"
+                  className="rounded-lg bg-gray-200 px-4 py-1.5 text-sm font-medium text-black transition-colors hover:bg-gray-300"
                 >
                   Use this template →
                 </Link>

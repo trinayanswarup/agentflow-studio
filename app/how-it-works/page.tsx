@@ -66,7 +66,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 
 export default function HowItWorksPage() {
   return (
-    <div className="min-h-screen bg-gray-950 text-white">
+    <div className="min-h-screen bg-gradient-to-b from-black to-[#1c1c1c] text-white">
       <div className="mx-auto max-w-3xl px-6 py-16">
         {/* Header */}
         <div className="mb-10">

@@ -20,7 +20,7 @@ html {
 body {
   color: var(--foreground);
   background: var(--background);
-  font-family: var(--font-geist-sans), system-ui, sans-serif;
+  font-family: var(--font-inter), system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
 }
@@ -38,7 +38,8 @@ body {
   }
 }
 
-/* Strip React Flow's injected white card background so tinted node cards show correctly. */
+/* Strip React Flow's injected white background and shadow from the node wrapper
+   so the tinted card backgrounds show correctly on the dark canvas. */
 .react-flow__node {
   background: transparent !important;
   box-shadow: none !important;

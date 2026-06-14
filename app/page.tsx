@@ -1,18 +1,12 @@
 import Link from 'next/link'
 import { NODE_COLORS } from '@/components/canvas/types'
 
-const STACK = ['Next.js 14', 'TypeScript', 'React Flow', 'Groq', 'Supabase', 'Tailwind']
-
-// ── Above-the-fold "product working" mock ────────────────────────────────────
-// A faithful, self-contained depiction of the two star surfaces — the canvas
-// and the live trace panel — mid-run. No screenshot asset required.
-
 const MOCK_NODES: { type: keyof typeof NODE_COLORS; eyebrow: string; label: string; state?: 'done' | 'running' }[] = [
-  { type: 'input', eyebrow: 'Input', label: 'Research Topic', state: 'done' },
-  { type: 'tool_call', eyebrow: 'Tool Call', label: 'Web Search', state: 'done' },
-  { type: 'llm_call', eyebrow: 'LLM Call', label: 'Write Brief', state: 'done' },
+  { type: 'input',     eyebrow: 'Input',     label: 'Research Topic',     state: 'done'    },
+  { type: 'tool_call', eyebrow: 'Tool Call', label: 'Web Search',         state: 'done'    },
+  { type: 'llm_call',  eyebrow: 'LLM Call',  label: 'Write Brief',        state: 'done'    },
   { type: 'condition', eyebrow: 'Condition', label: 'Needs Improvement?', state: 'running' },
-  { type: 'output', eyebrow: 'Output', label: 'Research Brief' },
+  { type: 'output',    eyebrow: 'Output',    label: 'Research Brief'                       },
 ]
 
 function CanvasMock() {
@@ -59,10 +53,10 @@ function CanvasMock() {
 
 function TraceMock() {
   const rows = [
-    { dot: 'bg-green-500', label: 'Web Search', tag: 'tool_call', metric: '612ms' },
-    { dot: 'bg-green-500', label: 'Write Brief', tag: 'llm_call', metric: '1.4s · 488 tok' },
-    { dot: 'bg-green-500', label: 'Quality Score', tag: 'tool_call', metric: '0.9s · 96 tok' },
-    { dot: 'bg-yellow-400', label: 'Needs Improvement?', tag: 'condition', metric: 'running…', pulse: true },
+    { dot: 'bg-green-500',  label: 'Web Search',         tag: 'tool_call', metric: '612ms',          pulse: false },
+    { dot: 'bg-green-500',  label: 'Write Brief',         tag: 'llm_call',  metric: '1.4s · 488 tok', pulse: false },
+    { dot: 'bg-green-500',  label: 'Quality Score',       tag: 'tool_call', metric: '0.9s · 96 tok',  pulse: false },
+    { dot: 'bg-yellow-400', label: 'Needs Improvement?',  tag: 'condition', metric: 'running…',        pulse: true  },
   ]
   return (
     <div className="flex flex-col border-l border-gray-800 bg-gray-950">
@@ -135,7 +129,7 @@ function WorkflowPreview() {
 
 export default function LandingPage() {
   return (
-    <div className="min-h-screen bg-gray-950 text-gray-100">
+    <div className="min-h-screen bg-gradient-to-b from-black to-[#1c1c1c] text-gray-100">
       {/* Top nav */}
       <header className="mx-auto flex max-w-6xl items-center justify-between px-6 py-5">
         <span className="text-sm font-semibold tracking-tight text-gray-100">
@@ -160,38 +154,45 @@ export default function LandingPage() {
       </header>
 
       {/* Hero */}
-      <section className="mx-auto max-w-6xl px-6 pb-16 pt-8">
-        <div className="mx-auto max-w-2xl text-center">
-          <span className="inline-block rounded-full border border-gray-800 bg-gray-900 px-3 py-1 text-[11px] font-medium uppercase tracking-wider text-gray-400">
-            Visual AI Workflow Builder
-          </span>
-          <h1 className="mt-5 text-balance text-4xl font-bold tracking-tight text-white sm:text-5xl">
-            Build AI agent workflows you can watch run, step by step.
+      <section className="relative flex flex-col items-center justify-center px-6 py-16 text-center">
+        {/* Subtle radial gradient behind the headline */}
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-x-0 top-0 h-full bg-[radial-gradient(ellipse_80%_50%_at_50%_0%,rgba(99,102,241,0.08)_0%,transparent_70%)]"
+        />
+
+        <div className="relative z-10 mx-auto max-w-3xl">
+          <h1 className="font-light leading-[1.1] tracking-[-0.02em] text-white text-[clamp(1.75rem,3.5vw,3rem)]">
+            Build AI agent workflows
+            <br />
+            you can watch run, step by step.
           </h1>
-          <p className="mx-auto mt-5 max-w-xl text-balance text-lg leading-relaxed text-gray-400">
-            Drag nodes onto a canvas, wire them together, and run them. A custom execution
-            engine walks the graph, calls LLMs and tools, and streams a live trace — with
-            human-in-the-loop pauses built in.
+
+          <p className="mx-auto mt-6 max-w-xl font-light leading-[1.6] text-[#a0a0a0] text-[1.0625rem]">
+            Drag nodes onto a canvas, wire them together, and run them.{' '}
+            A custom execution engine walks the graph, calls LLMs and tools,{' '}
+            and streams a live trace — with human-in-the-loop pauses built in.
           </p>
-          <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
+
+          <div className="mt-10 flex flex-wrap items-center justify-center gap-4">
             <Link
               href="/templates"
-              className="rounded-lg bg-accent-600 px-6 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-accent-500"
+              className="rounded-lg bg-gray-200 px-5 py-2.5 text-sm font-medium text-black transition-colors hover:bg-gray-300"
             >
               Browse Templates
             </Link>
             <Link
               href="/how-it-works"
-              className="rounded-lg border border-gray-700 px-6 py-2.5 text-sm font-semibold text-gray-300 transition-colors hover:border-gray-600 hover:text-white"
+              className="rounded-lg border border-white/20 px-5 py-2.5 text-sm font-medium text-white/70 transition-colors hover:border-white/40 hover:text-white"
             >
               How it works
             </Link>
           </div>
-        </div>
 
-        {/* Product-working visual */}
-        <div className="mx-auto mt-14 max-w-4xl">
-          <WorkflowPreview />
+          {/* Product-working visual */}
+          <div className="mx-auto mt-8 max-w-4xl">
+            <WorkflowPreview />
+          </div>
         </div>
       </section>
 
@@ -220,22 +221,9 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Stack + footer */}
+      {/* Footer */}
       <footer className="mx-auto max-w-6xl px-6 pb-16">
-        <div className="flex flex-wrap items-center gap-2 border-t border-gray-800 pt-8">
-          <span className="mr-2 text-xs font-semibold uppercase tracking-wider text-gray-500">
-            Built with
-          </span>
-          {STACK.map((s) => (
-            <span
-              key={s}
-              className="rounded-md border border-gray-800 bg-gray-900 px-2.5 py-1 text-xs font-medium text-gray-400"
-            >
-              {s}
-            </span>
-          ))}
-        </div>
-        <nav className="mt-8 flex flex-wrap gap-6 text-sm text-gray-500">
+        <nav className="flex flex-wrap gap-6 border-t border-gray-800 pt-8 text-sm text-gray-500">
           <Link href="/templates" className="hover:text-gray-300">Templates</Link>
           <Link href="/how-it-works" className="hover:text-gray-300">How it works</Link>
           <Link href="/editor" className="hover:text-gray-300">Editor</Link>

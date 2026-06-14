@@ -97,7 +97,7 @@ export default function EvalPage() {
   const isRunning = status === 'running'
 
   return (
-    <div className="min-h-screen bg-gray-950 text-white">
+    <div className="min-h-screen bg-gradient-to-b from-black to-[#1c1c1c] text-white">
       {/* Top bar */}
       <div className="flex h-12 items-center gap-3 border-b border-gray-800 bg-gray-950 px-4">
         <button
