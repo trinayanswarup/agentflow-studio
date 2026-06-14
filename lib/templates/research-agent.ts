@@ -26,11 +26,12 @@ export const researchAgentDefinition: WorkflowDefinition = {
       position: { x: 280, y: 120 },
       config: {
         toolName: 'web_search',
-        // On the first pass {{quality_1_output}} is empty. On a retry it holds
-        // the judge's reasoning, which refines the query toward what was missing.
+        // Fixed keywords keep the retry query short (<400 chars) so Tavily accepts
+        // it on every pass. Including {{quality_1_output}} caused the query to
+        // exceed Tavily's 400-character limit on the second iteration.
         args: {
           query:
-            '{{input_1_output}} in-depth analysis with sources and statistics {{quality_1_output}}',
+            '{{input_1_output}} key applications case studies examples statistics',
         },
       },
     },
@@ -67,7 +68,7 @@ export const researchAgentDefinition: WorkflowDefinition = {
       label: 'Needs Improvement?',
       position: { x: 280, y: 480 },
       // Low score → true → loop back to search and retry.
-      config: { expression: '{{quality_1_output}} < 7' },
+      config: { expression: '{{quality_1_output}} < 9' },
     },
     {
       id: 'output_1',

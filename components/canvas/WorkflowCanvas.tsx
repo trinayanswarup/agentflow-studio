@@ -151,8 +151,9 @@ function WorkflowCanvasInner({ initialDefinition, initialName }: InnerProps) {
         >
           {SAVE_LABEL[saveStatus]}
         </button>
-        <span className="ml-auto text-[11px] text-gray-500">
-          {nodes.length} nodes · {edges.length} edges
+        <span className="ml-auto flex items-center gap-4 text-[11px] text-gray-500">
+          <a href="/how-it-works" className="hover:text-gray-300">How it works</a>
+          <span>{nodes.length} nodes · {edges.length} edges</span>
         </span>
       </div>
 
@@ -161,7 +162,21 @@ function WorkflowCanvasInner({ initialDefinition, initialName }: InnerProps) {
         <NodeSidebar />
 
         {/* Canvas */}
-        <div ref={reactFlowWrapper} className="flex-1">
+        <div ref={reactFlowWrapper} className="relative flex-1">
+          {/* Empty state — shown when no nodes have been placed yet */}
+          {nodes.length === 0 && (
+            <div className="pointer-events-none absolute inset-0 z-10 flex flex-col items-center justify-center gap-4">
+              <p className="text-sm text-gray-500">
+                Drag a node from the left to start — or load a template
+              </p>
+              <a
+                href="/templates"
+                className="pointer-events-auto rounded bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+              >
+                Browse Templates
+              </a>
+            </div>
+          )}
           <ReactFlow
             nodes={nodes}
             edges={edges}

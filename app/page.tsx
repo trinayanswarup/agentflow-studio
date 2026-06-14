@@ -65,6 +65,12 @@ export default function LandingPage() {
           >
             Browse Templates
           </Link>
+          <Link
+            href="/how-it-works"
+            className="rounded border border-gray-700 px-6 py-2.5 text-sm font-semibold text-gray-300 transition-colors hover:border-gray-500 hover:text-white"
+          >
+            How it works
+          </Link>
           <a
             href="https://github.com/trinayanswarup/agentflow-studio"
             target="_blank"
@@ -95,6 +101,7 @@ export default function LandingPage() {
         {/* Nav links */}
         <nav className="mt-16 flex gap-6 border-t border-gray-800 pt-8 text-sm text-gray-500">
           <Link href="/templates" className="hover:text-gray-300">Templates</Link>
+          <Link href="/how-it-works" className="hover:text-gray-300">How it works</Link>
           <Link href="/editor" className="hover:text-gray-300">Editor</Link>
           <Link href="/eval" className="hover:text-gray-300">Eval Runner</Link>
         </nav>

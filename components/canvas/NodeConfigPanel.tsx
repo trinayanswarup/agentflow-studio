@@ -40,6 +40,15 @@ const NODE_TYPE_COLOR_CLS: Record<NodeType, string> = {
   output:      'text-green-400',
 }
 
+const NODE_TYPE_DESCRIPTIONS: Record<NodeType, string> = {
+  input:       'Entry point — receives the user\'s text input and passes it downstream.',
+  llm_call:    'Calls Groq with your prompt; may invoke tools in a loop until it produces a text response.',
+  tool_call:   'Runs one specific tool directly with the arguments you configure — no LLM reasoning.',
+  condition:   'Evaluates an expression against context values and takes the true or false branch.',
+  human_pause: 'Pauses the run and shows the current output for a human to approve, edit, or reject.',
+  output:      'End of the workflow — renders the final result using a template string.',
+}
+
 // ── Tool-call argument fields ─────────────────────────────────────────────────
 
 function ToolArgFields({
@@ -228,11 +237,14 @@ export function NodeConfigPanel({ node, onUpdate, nodes = [] }: Props) {
 
   return (
     <aside className="flex w-72 flex-shrink-0 flex-col gap-4 overflow-y-auto border-l border-gray-800 bg-gray-950 p-4">
-      {/* Node type badge + label */}
+      {/* Node type badge + description + label */}
       <div>
-        <div className={`mb-2 text-[10px] font-semibold uppercase tracking-wider ${colorCls}`}>
+        <div className={`mb-1 text-[10px] font-semibold uppercase tracking-wider ${colorCls}`}>
           {NODE_LABELS[type]}
         </div>
+        <p className="mb-3 text-[11px] leading-snug text-gray-400">
+          {NODE_TYPE_DESCRIPTIONS[type]}
+        </p>
         <Field label="Label">
           <input
             aria-label="Node label"

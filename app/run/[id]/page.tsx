@@ -9,6 +9,7 @@ import { nodeTypes } from '@/components/canvas/nodes'
 import type { AgentNodeData } from '@/components/canvas/types'
 import { useWorkflowExecution } from '@/hooks/useWorkflowExecution'
 import { TracePanel } from '@/components/trace/TracePanel'
+import { NodeStateLegend } from '@/components/canvas/NodeStateLegend'
 
 // ── Highlight styles for execution state ─────────────────────────────────────
 
@@ -224,6 +225,9 @@ export default function RunPage() {
           </button>
         </div>
       </div>
+
+      {/* Node state legend */}
+      <NodeStateLegend />
 
       {/* Error banner */}
       {errorMessage && (

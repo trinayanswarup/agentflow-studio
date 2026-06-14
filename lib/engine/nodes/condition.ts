@@ -18,21 +18,48 @@ function unquote(value: string): string {
 }
 
 function asNumber(value: string): number | null {
-  if (value.trim() === '') return null
+  const trimmed = value.trim()
+  if (trimmed === '') return null
+
   // Direct numeric strings ("7", "  3.5 ") parse cleanly.
-  const direct = Number(value)
+  const direct = Number(trimmed)
   if (Number.isFinite(direct)) return direct
-  // Fallback: pull the first number out of a structured string. This lets a
-  // condition compare against an LLM-judge result like {"score":7,"reasoning":…}
-  // — evaluate_output stringifies score first, so the first number is the score.
-  const match = value.match(/-?\d+(?:\.\d+)?/)
-  return match ? Number(match[0]) : null
+
+  // If the value looks like JSON (e.g. evaluate_output returns
+  // {"score":8,"reasoning":"..."}), parse it and use the 'score' key directly.
+  if (trimmed.includes('{')) {
+    try {
+      const parsed: unknown = JSON.parse(trimmed)
+      if (
+        typeof parsed === 'object' &&
+        parsed !== null &&
+        'score' in parsed &&
+        typeof (parsed as Record<string, unknown>).score === 'number'
+      ) {
+        const score = (parsed as Record<string, unknown>).score as number
+        console.error(`[condition] asNumber: extracted score=${score} from JSON (input="${trimmed.slice(0, 80)}")`)
+        return score
+      }
+    } catch {
+      // Not valid JSON — fall through to regex.
+    }
+  }
+
+  // Regex fallback: pull the first number from any structured string.
+  const match = trimmed.match(/-?\d+(?:\.\d+)?/)
+  const result = match ? Number(match[0]) : null
+  console.error(`[condition] asNumber: regex extracted ${result} from input="${trimmed.slice(0, 80)}"`)
+  return result
 }
 
 function compare(left: string, operator: string, right: string): boolean {
   const leftNum = asNumber(left)
   const rightNum = asNumber(right)
   const bothNumeric = leftNum !== null && rightNum !== null
+
+  console.error(
+    `[condition] comparing: "${left.slice(0, 60)}" ${operator} "${right}" → leftNum=${leftNum}, rightNum=${rightNum}, bothNumeric=${bothNumeric}`
+  )
 
   switch (operator) {
     case 'contains':
