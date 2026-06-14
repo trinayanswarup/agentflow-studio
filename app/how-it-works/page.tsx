@@ -4,7 +4,7 @@ const NODE_TYPES = [
   {
     type: 'Input',
     color: 'border-blue-500 text-blue-400',
-    description: 'Entry point. Receives the user\'s text string. Every workflow must start with exactly one Input node.',
+    description: "Entry point. Receives the user's text string. Every workflow must start with exactly one Input node.",
     example: 'Company name, domain, research topic…',
   },
   {
@@ -28,8 +28,8 @@ const NODE_TYPES = [
   {
     type: 'Human Pause',
     color: 'border-teal-500 text-teal-400',
-    description: 'Stops the run and surfaces the current output to a human reviewer. The run only continues after Approve, Edit, or Reject.',
-    example: 'Review a generated email before it\'s sent.',
+    description: "Stops the run and surfaces the current output to a human reviewer. The run only continues after Approve, Edit, or Reject.",
+    example: "Review a generated email before it's sent.",
   },
   {
     type: 'Output',
@@ -88,8 +88,8 @@ export default function HowItWorksPage() {
             execution order.
           </p>
           <p className="mt-3 text-gray-300 leading-relaxed">
-            Every node's output is automatically stored in the context under a readable key you
-            can reference in any downstream node using <Code>{'{{slug_output}}'}</Code>.
+            Every node&apos;s output is automatically stored in the context under a readable key
+            you can reference in any downstream node using <Code>{'{{slug_output}}'}</Code>.
           </p>
         </Section>
 
@@ -98,23 +98,23 @@ export default function HowItWorksPage() {
           <ul className="space-y-2 text-gray-300">
             <li className="flex gap-3">
               <span className="mt-0.5 text-blue-400">1.</span>
-              Drag from a node's output handle (the dot at the bottom) to another node's input
-              handle (dot at the top).
+              Drag from a node&apos;s output handle (the dot at the bottom) to another
+              node&apos;s input handle (dot at the top).
             </li>
             <li className="flex gap-3">
               <span className="mt-0.5 text-blue-400">2.</span>
               <span>
                 <span className="text-yellow-400 font-medium">Condition</span> nodes have{' '}
-                <strong>two</strong> output handles: a green <span className="text-green-400 font-semibold">true</span> handle (left) and a red{' '}
-                <span className="text-red-400 font-semibold">false</span> handle (right). Connect
-                each to the appropriate downstream node.
+                <strong>two</strong> output handles: a green{' '}
+                <span className="text-green-400 font-semibold">true</span> handle (left) and a
+                red <span className="text-red-400 font-semibold">false</span> handle (right).
+                Connect each to the appropriate downstream node.
               </span>
             </li>
-            <li className="flex gap-3">
-              <span className="mt-0.5 text-blue-400">3.</span>
-              To create a <strong>retry loop</strong>, connect a condition's true (or false)
-              branch back to an earlier node. The engine enforces a hard cap of 3 visits per node
-              before taking the forward path automatically.
+            <li>
+              3. To create a <strong>retry loop</strong>, connect a condition&apos;s true (or
+              false) branch back to an earlier node. The engine enforces a hard cap of 3 visits
+              per node before taking the forward path automatically.
             </li>
           </ul>
 
@@ -123,7 +123,11 @@ export default function HowItWorksPage() {
             <ul className="space-y-1">
               <li><Code>input</Code> — one output, no inputs</li>
               <li><Code>output</Code> — one input, no outputs</li>
-              <li><Code>condition</Code> — one input, two outputs (<span className="text-green-400">true</span> + <span className="text-red-400">false</span>)</li>
+              <li>
+                <Code>condition</Code> — one input, two outputs (
+                <span className="text-green-400">true</span> +{' '}
+                <span className="text-red-400">false</span>)
+              </li>
               <li><Code>llm_call</Code> / <Code>tool_call</Code> / <Code>human_pause</Code> — one input, one output</li>
             </ul>
           </div>
@@ -151,7 +155,7 @@ export default function HowItWorksPage() {
         <Section title="Template references — {{slug_output}}">
           <p className="text-gray-300 leading-relaxed">
             Every node that produces output is accessible downstream via a template placeholder.
-            The key is built from the node's label:
+            The key is built from the node&apos;s label:
           </p>
           <div className="mt-3 rounded-lg border border-gray-700 bg-gray-900 p-4 font-mono text-[13px] space-y-2">
             <div>
@@ -167,7 +171,7 @@ export default function HowItWorksPage() {
               <Code>{'{{quality_score_output}}'}</Code>
             </div>
             <div>
-              <span className="text-gray-500">Two nodes both labelled "Extract":</span>
+              <span className="text-gray-500">Two nodes both labelled &quot;Extract&quot;:</span>
               <div className="mt-1 pl-4 space-y-0.5">
                 <div><span className="text-gray-400">first →</span> <Code>{'{{extract_output}}'}</Code></div>
                 <div><span className="text-gray-400">second →</span> <Code>{'{{extract_2_output}}'}</Code></div>
@@ -175,19 +179,21 @@ export default function HowItWorksPage() {
             </div>
           </div>
           <p className="mt-3 text-[13px] text-gray-400">
-            The node UUID form also works: <Code>{'{{abc123_output}}'}</Code>. Click any variable in
-            the "Available variables" panel (right side of the editor) to copy it to your clipboard.
+            The node UUID form also works: <Code>{'{{abc123_output}}'}</Code>. Click any variable
+            in the &quot;Available variables&quot; panel (right side of the editor) to copy it to
+            your clipboard.
           </p>
           <p className="mt-2 text-[13px] text-gray-400">
-            The <Code>input</Code> node's value is always available as <Code>{'{{input}}'}</Code>.
+            The <Code>input</Code> node&apos;s value is always available as{' '}
+            <Code>{'{{input}}'}</Code>.
           </p>
         </Section>
 
         {/* Tools */}
         <Section title="Built-in tools">
           <p className="mb-3 text-gray-300">
-            Five tools are available. An <span className="text-purple-400">LLM Call</span> node can
-            use any of them via function calling; a{' '}
+            Five tools are available. An <span className="text-purple-400">LLM Call</span> node
+            can use any of them via function calling; a{' '}
             <span className="text-orange-400">Tool Call</span> node runs exactly one.
           </p>
           <div className="rounded-lg border border-gray-700 overflow-hidden">
@@ -221,17 +227,19 @@ export default function HowItWorksPage() {
             </li>
             <li className="flex gap-3">
               <span className="mt-0.5 flex-shrink-0 font-semibold text-blue-400">2.</span>
-              You're taken to the Run page. Enter an input in the top bar and click{' '}
+              You&apos;re taken to the Run page. Enter an input in the top bar and click{' '}
               <strong className="text-white">Run</strong>.
             </li>
             <li className="flex gap-3">
               <span className="mt-0.5 flex-shrink-0 font-semibold text-blue-400">3.</span>
-              Watch the canvas: nodes highlight in{' '}
-              <span className="font-semibold text-yellow-400">yellow</span> while running,{' '}
-              <span className="font-semibold text-green-400">green</span> when done,{' '}
-              <span className="font-semibold text-red-400">red</span> on error, and{' '}
-              <span className="font-semibold text-blue-400">blue</span> when waiting for your
-              approval.
+              <p>
+                Watch the canvas: nodes highlight in{' '}
+                <span className="font-semibold text-yellow-400">yellow</span> while running,{' '}
+                <span className="font-semibold text-green-400">green</span> when done,{' '}
+                <span className="font-semibold text-red-400">red</span> on error, and{' '}
+                <span className="font-semibold text-blue-400">blue</span> when waiting for your
+                approval.
+              </p>
             </li>
             <li className="flex gap-3">
               <span className="mt-0.5 flex-shrink-0 font-semibold text-blue-400">4.</span>
@@ -240,11 +248,13 @@ export default function HowItWorksPage() {
             </li>
             <li className="flex gap-3">
               <span className="mt-0.5 flex-shrink-0 font-semibold text-blue-400">5.</span>
-              If a <span className="text-teal-400">Human Pause</span> node is reached, an
-              approval card appears in the trace panel. Click{' '}
-              <strong className="text-white">Approve</strong>,{' '}
-              <strong className="text-white">Edit</strong>, or{' '}
-              <strong className="text-white">Reject</strong> to continue.
+              <p>
+                If a <span className="text-teal-400">Human Pause</span> node is reached, an
+                approval card appears in the trace panel. Click{' '}
+                <strong className="text-white">Approve</strong>,{' '}
+                <strong className="text-white">Edit</strong>, or{' '}
+                <strong className="text-white">Reject</strong> to continue.
+              </p>
             </li>
           </ol>
         </Section>
