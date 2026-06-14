@@ -134,19 +134,19 @@ function WorkflowCanvasInner({ initialDefinition, initialName }: InnerProps) {
         <input
           value={workflowName}
           onChange={(e) => setWorkflowName(e.target.value)}
-          className="rounded border border-gray-700 bg-gray-800 px-2 py-1 text-sm text-white focus:border-gray-500 focus:outline-none"
+          className="rounded-lg border border-gray-700 bg-gray-800 px-2.5 py-1.5 text-sm text-gray-100 transition-colors focus:border-accent-500 focus:outline-none"
           placeholder="Workflow name"
         />
         <button
           type="button"
           onClick={handleSave}
           disabled={saveStatus === 'saving'}
-          className={`rounded px-4 py-1 text-sm font-medium transition-colors ${
+          className={`rounded-lg px-4 py-1.5 text-sm font-semibold transition-colors ${
             saveStatus === 'saved'
-              ? 'bg-green-700 text-white'
+              ? 'bg-green-600 text-white'
               : saveStatus === 'error'
-              ? 'bg-red-700 text-white'
-              : 'bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50'
+              ? 'bg-red-600 text-white'
+              : 'bg-accent-600 text-white hover:bg-accent-500 disabled:opacity-50'
           }`}
         >
           {SAVE_LABEL[saveStatus]}
@@ -171,7 +171,7 @@ function WorkflowCanvasInner({ initialDefinition, initialName }: InnerProps) {
               </p>
               <a
                 href="/templates"
-                className="pointer-events-auto rounded bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+                className="pointer-events-auto rounded-lg bg-accent-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-accent-500"
               >
                 Browse Templates
               </a>

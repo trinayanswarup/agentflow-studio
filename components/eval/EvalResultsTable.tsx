@@ -18,7 +18,7 @@ interface Props {
 
 export function EvalResultsTable({ results }: Props) {
   return (
-    <div className="overflow-x-auto rounded border border-gray-800">
+    <div className="scroll-slim overflow-x-auto rounded-xl border border-gray-800">
       <table className="min-w-full text-sm">
         <thead>
           <tr className="border-b border-gray-800 bg-gray-900">
@@ -77,11 +77,11 @@ export function EvalResultsTable({ results }: Props) {
               {/* Pass/Fail */}
               <td className="px-4 py-3">
                 {r.pass ? (
-                  <span className="rounded bg-green-900 px-2 py-0.5 text-xs font-semibold text-green-300">
+                  <span className="rounded-full bg-green-500/10 px-2 py-0.5 text-xs font-semibold text-green-300 ring-1 ring-inset ring-green-500/20">
                     PASS
                   </span>
                 ) : (
-                  <span className="rounded bg-red-900 px-2 py-0.5 text-xs font-semibold text-red-300">
+                  <span className="rounded-full bg-red-500/10 px-2 py-0.5 text-xs font-semibold text-red-300 ring-1 ring-inset ring-red-500/20">
                     FAIL
                   </span>
                 )}

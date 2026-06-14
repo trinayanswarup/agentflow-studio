@@ -17,7 +17,7 @@ const HIGHLIGHT: Record<StepStatus, React.CSSProperties> = {
   running: { boxShadow: '0 0 0 3px #eab308, 0 0 16px rgba(234,179,8,0.45)', borderRadius: '0.5rem' },
   done:    { boxShadow: '0 0 0 3px #22c55e', borderRadius: '0.5rem' },
   error:   { boxShadow: '0 0 0 3px #ef4444', borderRadius: '0.5rem' },
-  waiting: { boxShadow: '0 0 0 3px #3b82f6, 0 0 16px rgba(59,130,246,0.45)', borderRadius: '0.5rem' },
+  waiting: { boxShadow: '0 0 0 3px #6366f1, 0 0 16px rgba(99,102,241,0.5)', borderRadius: '0.5rem' },
 }
 
 // ── Read-only canvas ──────────────────────────────────────────────────────────
@@ -76,8 +76,8 @@ function ReadOnlyCanvas({ workflow, nodeStates }: ReadOnlyCanvasProps) {
           if (status === 'running') return '#eab308'
           if (status === 'done') return '#22c55e'
           if (status === 'error') return '#ef4444'
-          if (status === 'waiting') return '#3b82f6'
-          return '#6b7280'
+          if (status === 'waiting') return '#6366f1'
+          return '#5b6475'
         }}
         className="!border-gray-700 !bg-gray-900"
       />
@@ -169,7 +169,7 @@ export default function RunPage() {
           <button
             type="button"
             onClick={() => router.push('/editor')}
-            className="rounded bg-blue-600 px-4 py-2 text-sm text-white hover:bg-blue-700"
+            className="rounded-lg bg-accent-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-accent-500"
           >
             Go to Editor
           </button>
@@ -213,13 +213,13 @@ export default function RunPage() {
                 ?.placeholder ?? 'Enter input…'
             }
             disabled={isRunning}
-            className="w-64 rounded border border-gray-700 bg-gray-800 px-3 py-1.5 text-sm text-white placeholder-gray-500 focus:border-gray-500 focus:outline-none disabled:opacity-50"
+            className="w-64 rounded-lg border border-gray-700 bg-gray-800 px-3 py-1.5 text-sm text-gray-100 placeholder-gray-500 transition-colors focus:border-accent-500 focus:outline-none disabled:opacity-50"
           />
           <button
             type="button"
             onClick={handleRun}
             disabled={isRunning || !input.trim()}
-            className="rounded bg-blue-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+            className="rounded-lg bg-accent-600 px-4 py-1.5 text-sm font-semibold text-white transition-colors hover:bg-accent-500 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {runStatus === 'starting' ? 'Starting…' : runStatus === 'running' ? 'Running…' : 'Run'}
           </button>

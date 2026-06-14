@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import type { NodeType } from '@/lib/types'
 import type { AgentNode } from './types'
-import { NODE_LABELS } from './types'
+import { NODE_LABELS, NODE_TEXT_CLS } from './types'
 import { TOOL_META, TOOL_NAMES } from '@/lib/tools/tool-meta'
 import { labelToSlug, buildSlugMap } from '@/lib/engine/slugs'
 
@@ -26,19 +26,10 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 }
 
 const inputCls =
-  'rounded border border-gray-700 bg-gray-800 px-2 py-1.5 text-sm text-white placeholder-gray-500 focus:border-gray-500 focus:outline-none'
+  'rounded-lg border border-gray-700 bg-gray-800 px-2.5 py-1.5 text-sm text-gray-100 placeholder-gray-500 transition-colors focus:border-accent-500 focus:outline-none'
 
 /** Node types that support {{nodeId_output}} template references. */
 const TEMPLATE_TYPES: NodeType[] = ['llm_call', 'tool_call', 'condition', 'human_pause', 'output']
-
-const NODE_TYPE_COLOR_CLS: Record<NodeType, string> = {
-  input:       'text-blue-400',
-  llm_call:    'text-purple-400',
-  tool_call:   'text-yellow-400',
-  condition:   'text-orange-400',
-  human_pause: 'text-teal-400',
-  output:      'text-green-400',
-}
 
 const NODE_TYPE_DESCRIPTIONS: Record<NodeType, string> = {
   input:       'Entry point — receives the user\'s text input and passes it downstream.',
@@ -172,7 +163,7 @@ function VariablesHint({
               title="Click to copy"
             >
               <div className="flex items-center gap-1.5">
-                <code className="flex-1 truncate font-mono text-[11px] text-blue-400">
+                <code className="flex-1 truncate font-mono text-[11px] text-accent-400">
                   {variable}
                 </code>
                 {isCopied && (
@@ -182,7 +173,7 @@ function VariablesHint({
               <div className="flex items-center gap-1.5 text-[10px] text-gray-500">
                 <span className="truncate">{n.data.label}</span>
                 <span className="flex-shrink-0 text-gray-700">·</span>
-                <span className={`flex-shrink-0 ${NODE_TYPE_COLOR_CLS[type] ?? 'text-gray-500'}`}>
+                <span className={`flex-shrink-0 ${NODE_TEXT_CLS[type] ?? 'text-gray-500'}`}>
                   {NODE_LABELS[type]}
                 </span>
               </div>
@@ -220,7 +211,7 @@ export function NodeConfigPanel({ node, onUpdate, nodes = [] }: Props) {
   }
 
   const type = node.type as NodeType
-  const colorCls = NODE_TYPE_COLOR_CLS[type] ?? 'text-gray-400'
+  const colorCls = NODE_TEXT_CLS[type] ?? 'text-gray-400'
 
   function push(newLabel: string, newConfig: Record<string, unknown>) {
     setLabel(newLabel)

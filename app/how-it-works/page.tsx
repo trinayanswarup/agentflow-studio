@@ -27,7 +27,7 @@ const NODE_TYPES = [
   },
   {
     type: 'Human Pause',
-    color: 'border-teal-500 text-teal-400',
+    color: 'border-red-500 text-red-400',
     description: "Stops the run and surfaces the current output to a human reviewer. The run only continues after Approve, Edit, or Reject.",
     example: "Review a generated email before it's sent.",
   },
@@ -49,7 +49,7 @@ const TOOLS = [
 
 function Code({ children }: { children: string }) {
   return (
-    <code className="rounded bg-gray-800 px-1.5 py-0.5 font-mono text-[12px] text-blue-300">
+    <code className="rounded bg-gray-800 px-1.5 py-0.5 font-mono text-[12px] text-accent-300">
       {children}
     </code>
   )
@@ -97,12 +97,12 @@ export default function HowItWorksPage() {
         <Section title="How to connect nodes">
           <ul className="space-y-2 text-gray-300">
             <li className="flex gap-3">
-              <span className="mt-0.5 text-blue-400">1.</span>
+              <span className="mt-0.5 text-accent-400">1.</span>
               Drag from a node&apos;s output handle (the dot at the bottom) to another
               node&apos;s input handle (dot at the top).
             </li>
             <li className="flex gap-3">
-              <span className="mt-0.5 text-blue-400">2.</span>
+              <span className="mt-0.5 text-accent-400">2.</span>
               <span>
                 <span className="text-yellow-400 font-medium">Condition</span> nodes have{' '}
                 <strong>two</strong> output handles: a green{' '}
@@ -220,36 +220,36 @@ export default function HowItWorksPage() {
         <Section title="How to run a workflow">
           <ol className="space-y-3 text-gray-300">
             <li className="flex gap-3">
-              <span className="mt-0.5 flex-shrink-0 font-semibold text-blue-400">1.</span>
-              Open the <Link href="/editor" className="text-blue-400 hover:underline">Editor</Link>,
+              <span className="mt-0.5 flex-shrink-0 font-semibold text-accent-400">1.</span>
+              Open the <Link href="/editor" className="text-accent-400 hover:underline">Editor</Link>,
               build your workflow (or load a template), and click{' '}
               <strong className="text-white">Save</strong>.
             </li>
             <li className="flex gap-3">
-              <span className="mt-0.5 flex-shrink-0 font-semibold text-blue-400">2.</span>
+              <span className="mt-0.5 flex-shrink-0 font-semibold text-accent-400">2.</span>
               You&apos;re taken to the Run page. Enter an input in the top bar and click{' '}
               <strong className="text-white">Run</strong>.
             </li>
             <li className="flex gap-3">
-              <span className="mt-0.5 flex-shrink-0 font-semibold text-blue-400">3.</span>
+              <span className="mt-0.5 flex-shrink-0 font-semibold text-accent-400">3.</span>
               <p>
                 Watch the canvas: nodes highlight in{' '}
                 <span className="font-semibold text-yellow-400">yellow</span> while running,{' '}
                 <span className="font-semibold text-green-400">green</span> when done,{' '}
                 <span className="font-semibold text-red-400">red</span> on error, and{' '}
-                <span className="font-semibold text-blue-400">blue</span> when waiting for your
+                <span className="font-semibold text-accent-400">indigo</span> when waiting for your
                 approval.
               </p>
             </li>
             <li className="flex gap-3">
-              <span className="mt-0.5 flex-shrink-0 font-semibold text-blue-400">4.</span>
+              <span className="mt-0.5 flex-shrink-0 font-semibold text-accent-400">4.</span>
               The live trace panel on the right shows each step: output preview, latency, and
               token count. The final result appears at the bottom when the run completes.
             </li>
             <li className="flex gap-3">
-              <span className="mt-0.5 flex-shrink-0 font-semibold text-blue-400">5.</span>
+              <span className="mt-0.5 flex-shrink-0 font-semibold text-accent-400">5.</span>
               <p>
-                If a <span className="text-teal-400">Human Pause</span> node is reached, an
+                If a <span className="text-red-400">Human Pause</span> node is reached, an
                 approval card appears in the trace panel. Click{' '}
                 <strong className="text-white">Approve</strong>,{' '}
                 <strong className="text-white">Edit</strong>, or{' '}

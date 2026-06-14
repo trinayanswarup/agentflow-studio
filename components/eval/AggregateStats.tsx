@@ -45,11 +45,11 @@ export function AggregateStats({ results }: Props) {
   return (
     <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
       {stats.map((s) => (
-        <div key={s.label} className="rounded border border-gray-800 bg-gray-900 p-4">
-          <div className="text-[11px] font-semibold uppercase tracking-wider text-gray-400">
+        <div key={s.label} className="rounded-xl border border-gray-800 bg-gray-900 p-4">
+          <div className="text-[11px] font-semibold uppercase tracking-wider text-gray-500">
             {s.label}
           </div>
-          <div className={`mt-1 text-2xl font-bold ${s.color}`}>{s.value}</div>
+          <div className={`mt-1 text-2xl font-bold tabular-nums ${s.color}`}>{s.value}</div>
           <div className="text-[11px] text-gray-500">{s.sub}</div>
         </div>
       ))}

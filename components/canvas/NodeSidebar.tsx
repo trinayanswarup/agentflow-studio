@@ -18,7 +18,7 @@ function onDragStart(e: DragEvent<HTMLDivElement>, nodeType: NodeType) {
 
 export function NodeSidebar() {
   return (
-    <aside className="flex w-48 flex-shrink-0 flex-col gap-2 overflow-y-auto border-r border-gray-800 bg-gray-950 p-3">
+    <aside className="scroll-slim flex w-48 flex-shrink-0 flex-col gap-2 overflow-y-auto border-r border-gray-800 bg-gray-950 p-3">
       <p className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-gray-500">
         Drag to canvas
       </p>
@@ -27,7 +27,7 @@ export function NodeSidebar() {
           key={type}
           draggable
           onDragStart={(e) => onDragStart(e, type)}
-          className="cursor-grab select-none rounded-lg border-2 bg-gray-900 px-3 py-2 text-sm text-white active:cursor-grabbing"
+          className="cursor-grab select-none rounded-lg border-2 bg-gray-900 px-3 py-2 text-sm text-gray-100 transition-shadow hover:shadow-panel active:cursor-grabbing"
           style={{ borderColor: NODE_COLORS[type] }}
         >
           <div

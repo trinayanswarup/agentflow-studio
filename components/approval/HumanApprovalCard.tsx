@@ -51,74 +51,75 @@ export function HumanApprovalCard({ runId, pause, onDecision }: Props) {
 
   if (cardStatus === 'done') {
     return (
-      <div className="mx-1 my-2 rounded border border-green-800 bg-green-950 px-4 py-3 text-sm text-green-300">
+      <div className="my-3 flex items-center gap-2 rounded-lg border border-green-800/60 bg-green-950/40 px-4 py-3 text-sm text-green-300">
+        <span className="h-1.5 w-1.5 rounded-full bg-green-500" />
         Decision submitted — workflow continuing…
       </div>
     )
   }
 
   const busy = cardStatus === 'submitting'
+  const hasEdits = editedOutput !== pause.previousOutput
 
   return (
-    <div className="mx-1 my-2 rounded border border-blue-800 bg-gray-900 p-4">
+    <div className="my-3 overflow-hidden rounded-xl border border-accent-700/60 bg-gray-900 shadow-accent-glow animate-fade-in-up">
       {/* Header */}
-      <div className="mb-2 flex items-center gap-2">
-        <span className="text-base leading-none text-blue-400">⏸</span>
-        <span className="text-sm font-semibold text-blue-300">{pause.label}</span>
+      <div className="flex items-center gap-2 border-b border-gray-800 bg-accent-500/10 px-4 py-2.5">
+        <span className="h-2 w-2 animate-pulse rounded-full bg-accent-500" />
+        <span className="text-sm font-semibold text-accent-200">{pause.label}</span>
+        <span className="ml-auto text-[10px] font-semibold uppercase tracking-wider text-accent-400">
+          Needs your review
+        </span>
       </div>
 
-      {/* Review message */}
-      <p className="mb-3 text-xs text-gray-400">{pause.message}</p>
+      <div className="p-4">
+        {/* Review message */}
+        <p className="mb-3 text-xs leading-relaxed text-gray-400">{pause.message}</p>
 
-      {/* Editable output */}
-      <label className="mb-1 block text-[10px] font-semibold uppercase tracking-wider text-gray-500">
-        Content to review / edit
-      </label>
-      <textarea
-        value={editedOutput}
-        onChange={(e) => setEditedOutput(e.target.value)}
-        disabled={busy}
-        rows={6}
-        className="mb-3 w-full rounded border border-gray-700 bg-gray-800 px-3 py-2 font-mono text-xs text-gray-200 focus:border-gray-500 focus:outline-none disabled:opacity-50"
-      />
-
-      {/* Error */}
-      {cardStatus === 'error' && (
-        <p className="mb-2 text-xs text-red-400">{errorMsg}</p>
-      )}
-
-      {/* Action buttons */}
-      <div className="flex gap-2">
-        <button
-          type="button"
+        {/* Editable output */}
+        <label
+          htmlFor="approval-content"
+          className="mb-1 block text-[10px] font-semibold uppercase tracking-wider text-gray-500"
+        >
+          Content to review / edit
+        </label>
+        <textarea
+          id="approval-content"
+          value={editedOutput}
+          onChange={(e) => setEditedOutput(e.target.value)}
           disabled={busy}
-          onClick={() => void submit('approve', false)}
-          className="rounded bg-green-700 px-3 py-1.5 text-xs font-semibold text-white hover:bg-green-600 disabled:opacity-50"
-        >
-          Approve
-        </button>
-        <button
-          type="button"
-          disabled={busy || editedOutput === pause.previousOutput}
-          onClick={() => void submit('approve', true)}
-          className="rounded bg-blue-700 px-3 py-1.5 text-xs font-semibold text-white hover:bg-blue-600 disabled:cursor-not-allowed disabled:opacity-50"
-          title="Approve with your edits"
-        >
-          Edit + Continue
-        </button>
-        <button
-          type="button"
-          disabled={busy}
-          onClick={() => void submit('reject', false)}
-          className="ml-auto rounded bg-red-800 px-3 py-1.5 text-xs font-semibold text-white hover:bg-red-700 disabled:opacity-50"
-        >
-          Reject
-        </button>
+          rows={6}
+          className="scroll-slim mb-3 w-full rounded-lg border border-gray-700 bg-gray-950 px-3 py-2 font-mono text-xs leading-relaxed text-gray-200 transition-colors focus:border-accent-500 focus:outline-none disabled:opacity-50"
+        />
+
+        {/* Error */}
+        {cardStatus === 'error' && (
+          <p className="mb-2 text-xs text-red-400">{errorMsg}</p>
+        )}
+
+        {/* Action buttons */}
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => void submit('approve', hasEdits)}
+            className="rounded-lg bg-green-600 px-3.5 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-green-500 disabled:opacity-50"
+            title={hasEdits ? 'Approve with your edits' : 'Approve and continue'}
+          >
+            {hasEdits ? 'Approve edits' : 'Approve'}
+          </button>
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => void submit('reject', false)}
+            className="ml-auto rounded-lg border border-red-800/70 px-3.5 py-1.5 text-xs font-semibold text-red-300 transition-colors hover:bg-red-950/60 disabled:opacity-50"
+          >
+            Reject
+          </button>
+        </div>
+
+        {busy && <p className="mt-2 text-[11px] text-gray-500">Submitting decision…</p>}
       </div>
-
-      {busy && (
-        <p className="mt-2 text-[11px] text-gray-500">Submitting decision…</p>
-      )}
     </div>
   )
 }

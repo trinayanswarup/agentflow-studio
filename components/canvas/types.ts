@@ -10,7 +10,12 @@ export type AgentNodeData = {
 export type AgentNode = Node<AgentNodeData>
 export type AgentEdge = Edge
 
-/** Border colors keyed by node type — used in components and the sidebar. */
+/**
+ * The node-type semantic palette. These six hues encode node meaning on the
+ * canvas and are the single source of truth — the sidebar, config panel,
+ * how-it-works page, and run-page minimap all derive from here so they can
+ * never drift. (Distinct from the chrome `accent`, which drives buttons/links.)
+ */
 export const NODE_COLORS: Record<NodeType, string> = {
   input: '#3b82f6',
   llm_call: '#a855f7',
@@ -18,6 +23,16 @@ export const NODE_COLORS: Record<NodeType, string> = {
   condition: '#eab308',
   human_pause: '#ef4444',
   output: '#22c55e',
+}
+
+/** Tailwind text-colour classes matching NODE_COLORS (kept in lock-step). */
+export const NODE_TEXT_CLS: Record<NodeType, string> = {
+  input: 'text-blue-400',
+  llm_call: 'text-purple-400',
+  tool_call: 'text-orange-400',
+  condition: 'text-yellow-400',
+  human_pause: 'text-red-400',
+  output: 'text-green-400',
 }
 
 export const NODE_LABELS: Record<NodeType, string> = {

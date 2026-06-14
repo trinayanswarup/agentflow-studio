@@ -2,26 +2,66 @@
 @tailwind components;
 @tailwind utilities;
 
+/*
+ * AgentFlow Studio — dark-only theme.
+ * Background/foreground are token-driven; the deliberate cool-slate neutral
+ * ramp and the single indigo accent live in tailwind.config.ts.
+ */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #0c0e15; /* gray-950 */
+  --foreground: #e9ebf0; /* gray-100 */
+  --accent: #6366f1;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  color-scheme: dark;
 }
 
 body {
   color: var(--foreground);
   background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-geist-sans), system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+@layer base {
+  /* Default border colour so 1px hairlines read consistently everywhere. */
+  * {
+    border-color: theme("colors.gray.800");
+  }
+
+  /* Deliberate focus ring on the accent — keyboard users get a clear target. */
+  :focus-visible {
+    outline: 2px solid theme("colors.accent.500");
+    outline-offset: 1px;
+  }
 }
 
 @layer utilities {
   .text-balance {
     text-wrap: balance;
+  }
+
+  /* Refined scrollbars — the trace panel scrolls a lot; make it feel intentional. */
+  .scroll-slim {
+    scrollbar-width: thin;
+    scrollbar-color: theme("colors.gray.700") transparent;
+  }
+  .scroll-slim::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  .scroll-slim::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .scroll-slim::-webkit-scrollbar-thumb {
+    background-color: theme("colors.gray.700");
+    border-radius: 9999px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+  }
+  .scroll-slim::-webkit-scrollbar-thumb:hover {
+    background-color: theme("colors.gray.600");
   }
 }

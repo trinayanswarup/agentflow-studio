@@ -103,16 +103,16 @@ export default function EvalPage() {
         <button
           type="button"
           onClick={() => router.push('/editor')}
-          className="text-sm text-gray-400 hover:text-gray-200"
+          className="text-sm text-gray-400 transition-colors hover:text-gray-200"
         >
           ← Editor
         </button>
-        <span className="text-sm font-semibold text-gray-200">Eval Runner</span>
+        <span className="text-sm font-semibold text-gray-100">Eval Runner</span>
       </div>
 
       <div className="mx-auto max-w-5xl p-6">
         {/* Config panel */}
-        <div className="mb-6 rounded border border-gray-800 bg-gray-900 p-5">
+        <div className="mb-6 rounded-xl border border-gray-800 bg-gray-900 p-5">
           <div className="mb-4 flex flex-wrap items-end gap-6">
             {/* Workflow selector */}
             <div className="min-w-[200px] flex-1">
@@ -132,7 +132,7 @@ export default function EvalPage() {
                   <button
                     type="button"
                     onClick={() => router.push('/editor')}
-                    className="text-blue-400 underline hover:text-blue-300"
+                    className="text-accent-400 underline hover:text-accent-300"
                   >
                     Build one in the Editor.
                   </button>
@@ -142,7 +142,7 @@ export default function EvalPage() {
                   id="workflow-select"
                   value={selectedWorkflowId}
                   onChange={(e) => setSelectedWorkflowId(e.target.value)}
-                  className="w-full rounded border border-gray-700 bg-gray-800 px-3 py-1.5 text-sm text-white focus:border-gray-500 focus:outline-none"
+                  className="w-full rounded-lg border border-gray-700 bg-gray-800 px-3 py-1.5 text-sm text-gray-100 transition-colors focus:border-accent-500 focus:outline-none"
                 >
                   {workflows.map((wf) => (
                     <option key={wf.id} value={wf.id}>
@@ -165,9 +165,9 @@ export default function EvalPage() {
                     type="button"
                     onClick={() => setStrategy(s.value)}
                     title={s.hint}
-                    className={`rounded px-3 py-1.5 text-xs font-medium transition-colors ${
+                    className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
                       strategy === s.value
-                        ? 'bg-blue-600 text-white'
+                        ? 'bg-accent-600 text-white'
                         : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
                     }`}
                   >
@@ -191,7 +191,7 @@ export default function EvalPage() {
               onChange={(e) => setTestCasesJson(e.target.value)}
               rows={12}
               spellCheck={false}
-              className="w-full rounded border border-gray-700 bg-gray-800 px-3 py-2 font-mono text-xs text-gray-200 focus:border-gray-500 focus:outline-none"
+              className="scroll-slim w-full rounded-lg border border-gray-700 bg-gray-950 px-3 py-2 font-mono text-xs leading-relaxed text-gray-200 transition-colors focus:border-accent-500 focus:outline-none"
               placeholder='[{"input": "...", "expected": "..."}]'
             />
             <p className="mt-1 text-[11px] text-gray-500">
@@ -205,7 +205,7 @@ export default function EvalPage() {
 
           {/* Error banner */}
           {status === 'error' && (
-            <div className="mb-3 rounded border border-red-800 bg-red-950 px-4 py-2 text-sm text-red-300">
+            <div className="mb-3 rounded-lg border border-red-900/60 bg-red-950/40 px-4 py-2 text-sm text-red-300">
               {errorMsg}
             </div>
           )}
@@ -215,7 +215,7 @@ export default function EvalPage() {
             type="button"
             onClick={handleRunEvals}
             disabled={isRunning || !selectedWorkflowId || workflows.length === 0}
-            className="rounded bg-blue-600 px-6 py-2 text-sm font-semibold text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+            className="rounded-lg bg-accent-600 px-6 py-2 text-sm font-semibold text-white transition-colors hover:bg-accent-500 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {isRunning ? (
               <span className="flex items-center gap-2">
