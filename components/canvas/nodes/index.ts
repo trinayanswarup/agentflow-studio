@@ -1,6 +1,6 @@
 import type { NodeTypes } from 'reactflow'
 import { InputNode } from './InputNode'
-import { LlmCallNode } from './LlmCallNode'
+import { LlmCallNode } from './LLMCallNode'
 import { ToolCallNode } from './ToolCallNode'
 import { ConditionNode } from './ConditionNode'
 import { HumanPauseNode } from './HumanPauseNode'

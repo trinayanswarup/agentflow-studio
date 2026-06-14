@@ -38,6 +38,12 @@ body {
   }
 }
 
+/* Strip React Flow's injected white card background so tinted node cards show correctly. */
+.react-flow__node {
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
 @layer utilities {
   .text-balance {
     text-wrap: balance;

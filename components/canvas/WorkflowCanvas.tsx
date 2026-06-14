@@ -163,6 +163,19 @@ function WorkflowCanvasInner({ initialDefinition, initialName }: InnerProps) {
 
         {/* Canvas */}
         <div ref={reactFlowWrapper} className="relative flex-1">
+          {/* Footer stats bar — floats above the canvas */}
+          <div className="pointer-events-none absolute bottom-4 left-1/2 z-10 -translate-x-1/2">
+            <div className="flex items-center gap-3 rounded-lg border border-gray-800/30 bg-gray-950/40 px-4 py-1.5 backdrop-blur-sm">
+              <span className="text-[10px] font-semibold uppercase tracking-widest text-gray-500">
+                ● {nodes.length} Nodes
+              </span>
+              <span className="h-3 w-px bg-gray-800/60" />
+              <span className="text-[10px] font-semibold uppercase tracking-widest text-gray-500">
+                ● {edges.length} Connections
+              </span>
+            </div>
+          </div>
+
           {/* Empty state — shown when no nodes have been placed yet */}
           {nodes.length === 0 && (
             <div className="pointer-events-none absolute inset-0 z-10 flex flex-col items-center justify-center gap-4">

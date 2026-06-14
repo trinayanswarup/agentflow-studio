@@ -1,21 +1,31 @@
 import { Handle, Position, type NodeProps } from 'reactflow'
+import { GitBranch } from 'lucide-react'
 import { BaseNode } from './BaseNode'
 import type { AgentNodeData } from '../types'
-import { NODE_COLORS } from '../types'
 
 export function ConditionNode({ data, selected }: NodeProps<AgentNodeData>) {
   return (
-    <BaseNode color={NODE_COLORS.condition} typeLabel="Condition" label={data.label} selected={selected}>
+    <BaseNode
+      borderCls="border-yellow-400/40"
+      bgCls="bg-yellow-400/10"
+      textCls="text-yellow-400"
+      icon={<GitBranch size={16} />}
+      typeLabel="Condition"
+      label={data.label}
+      description="Evaluates an expression; branches true or false."
+      selected={selected}
+      footer={
+        <div className="flex justify-between">
+          <span className="text-[10px] font-medium uppercase tracking-widest text-green-400/70">
+            → TRUE
+          </span>
+          <span className="text-[10px] font-medium uppercase tracking-widest text-red-400/70">
+            → FALSE
+          </span>
+        </div>
+      }
+    >
       <Handle type="target" position={Position.Top} className="!bg-yellow-400" />
-      {/* Labels sit directly above the two source handles (at 25% and 75%) */}
-      <div className="relative mt-3 h-5">
-        <span className="absolute left-[25%] -translate-x-1/2 bottom-1 text-[10px] font-semibold text-green-400">
-          true
-        </span>
-        <span className="absolute left-[75%] -translate-x-1/2 bottom-1 text-[10px] font-semibold text-red-400">
-          false
-        </span>
-      </div>
       <Handle
         type="source"
         position={Position.Bottom}

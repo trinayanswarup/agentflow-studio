@@ -14,10 +14,10 @@ import { NodeStateLegend } from '@/components/canvas/NodeStateLegend'
 // ── Highlight styles for execution state ─────────────────────────────────────
 
 const HIGHLIGHT: Record<StepStatus, React.CSSProperties> = {
-  running: { boxShadow: '0 0 0 3px #eab308, 0 0 16px rgba(234,179,8,0.45)', borderRadius: '0.5rem' },
-  done:    { boxShadow: '0 0 0 3px #22c55e', borderRadius: '0.5rem' },
-  error:   { boxShadow: '0 0 0 3px #ef4444', borderRadius: '0.5rem' },
-  waiting: { boxShadow: '0 0 0 3px #6366f1, 0 0 16px rgba(99,102,241,0.5)', borderRadius: '0.5rem' },
+  running: { boxShadow: '0 0 0 3px #eab308, 0 0 16px rgba(234,179,8,0.45)', borderRadius: '0.75rem' },
+  done:    { boxShadow: '0 0 0 3px #22c55e', borderRadius: '0.75rem' },
+  error:   { boxShadow: '0 0 0 3px #ef4444', borderRadius: '0.75rem' },
+  waiting: { boxShadow: '0 0 0 3px #6366f1, 0 0 16px rgba(99,102,241,0.5)', borderRadius: '0.75rem' },
 }
 
 // ── Read-only canvas ──────────────────────────────────────────────────────────
