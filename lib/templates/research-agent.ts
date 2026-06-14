@@ -68,7 +68,7 @@ export const researchAgentDefinition: WorkflowDefinition = {
       label: 'Needs Improvement?',
       position: { x: 280, y: 480 },
       // Low score → true → loop back to search and retry.
-      config: { expression: '{{quality_1_output}} < 9' },
+      config: { expression: '{{quality_1_output}} < 7' },
     },
     {
       id: 'output_1',
