@@ -184,6 +184,16 @@ export default function LandingPage() {
             </Link>
           </div>
 
+          <p className="mt-4 text-center text-[13px] text-gray-600">
+            or{' '}
+            <Link
+              href="/editor?template=hello&tour=true"
+              className="text-gray-500 underline underline-offset-2 transition-colors hover:text-gray-300"
+            >
+              open the guided walkthrough →
+            </Link>
+          </p>
+
           {/* Product-working visual */}
           <div className="mx-auto mt-8 max-w-4xl">
             <WorkflowPreview />

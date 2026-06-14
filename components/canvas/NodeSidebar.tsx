@@ -18,7 +18,7 @@ function onDragStart(e: DragEvent<HTMLDivElement>, nodeType: NodeType) {
 
 export function NodeSidebar() {
   return (
-    <aside className="scroll-slim flex w-48 flex-shrink-0 flex-col gap-2 overflow-y-auto border-r border-gray-800 bg-gray-950 p-3">
+    <aside data-tour="sidebar" className="scroll-slim flex w-48 flex-shrink-0 flex-col gap-2 overflow-y-auto border-r border-gray-800 bg-gray-950 p-3">
       <p className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-gray-500">
         Drag to canvas
       </p>

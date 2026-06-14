@@ -13,7 +13,7 @@ const WorkflowCanvas = dynamic(() => import('@/components/canvas/WorkflowCanvas'
 })
 
 interface EditorPageProps {
-  searchParams: { template?: string; demo?: string; name?: string }
+  searchParams: { template?: string; demo?: string; name?: string; tour?: string }
 }
 
 export default function EditorPage({ searchParams }: EditorPageProps) {
@@ -24,10 +24,15 @@ export default function EditorPage({ searchParams }: EditorPageProps) {
 
   const initialDefinition: WorkflowDefinition | undefined = template?.definition
   const initialName = template?.name ?? searchParams.name ?? 'My Workflow'
+  const showTour = searchParams.tour === 'true'
 
   return (
     <div className="h-screen bg-gray-950 text-white">
-      <WorkflowCanvas initialDefinition={initialDefinition} initialName={initialName} />
+      <WorkflowCanvas
+        initialDefinition={initialDefinition}
+        initialName={initialName}
+        showTour={showTour}
+      />
     </div>
   )
 }

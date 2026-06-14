@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useRef, useState } from 'react'
+import { GuidedTour } from '@/components/onboarding/GuidedTour'
 import { useRouter } from 'next/navigation'
 import ReactFlow, {
   Background,
@@ -34,9 +35,10 @@ import { NodeConfigPanel } from './NodeConfigPanel'
 interface InnerProps {
   initialDefinition: WorkflowDefinition | undefined
   initialName: string
+  showTour: boolean
 }
 
-function WorkflowCanvasInner({ initialDefinition, initialName }: InnerProps) {
+function WorkflowCanvasInner({ initialDefinition, initialName, showTour }: InnerProps) {
   const reactFlowWrapper = useRef<HTMLDivElement>(null)
   const { screenToFlowPosition } = useReactFlow()
   const router = useRouter()
@@ -47,6 +49,7 @@ function WorkflowCanvasInner({ initialDefinition, initialName }: InnerProps) {
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null)
   const [workflowName, setWorkflowName] = useState(initialName)
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
+  const [tourVisible, setTourVisible] = useState<boolean>(showTour)
 
   const selectedNode = nodes.find((n) => n.id === selectedNodeId) ?? null
 
@@ -129,6 +132,8 @@ function WorkflowCanvasInner({ initialDefinition, initialName }: InnerProps) {
 
   return (
     <div className="flex h-full flex-col">
+      {tourVisible && <GuidedTour onClose={() => setTourVisible(false)} />}
+
       {/* Top bar */}
       <div className="flex h-12 flex-shrink-0 items-center gap-3 border-b border-gray-800 bg-gray-950 px-4">
         <input
@@ -138,6 +143,7 @@ function WorkflowCanvasInner({ initialDefinition, initialName }: InnerProps) {
           placeholder="Workflow name"
         />
         <button
+          data-tour="save-btn"
           type="button"
           onClick={handleSave}
           disabled={saveStatus === 'saving'}
@@ -163,7 +169,7 @@ function WorkflowCanvasInner({ initialDefinition, initialName }: InnerProps) {
         <NodeSidebar />
 
         {/* Canvas */}
-        <div ref={reactFlowWrapper} className="relative flex-1">
+        <div data-tour="canvas" ref={reactFlowWrapper} className="relative flex-1">
           {/* Footer stats bar — floats above the canvas */}
           <div className="pointer-events-none absolute bottom-4 left-1/2 z-10 -translate-x-1/2">
             <div className="flex items-center gap-3 rounded-lg border border-gray-800/30 bg-gray-950/40 px-4 py-1.5 backdrop-blur-sm">
@@ -237,15 +243,21 @@ function WorkflowCanvasInner({ initialDefinition, initialName }: InnerProps) {
 interface WorkflowCanvasProps {
   initialDefinition?: WorkflowDefinition
   initialName?: string
+  showTour?: boolean
 }
 
 export default function WorkflowCanvas({
   initialDefinition,
   initialName = 'My Workflow',
+  showTour = false,
 }: WorkflowCanvasProps) {
   return (
     <ReactFlowProvider>
-      <WorkflowCanvasInner initialDefinition={initialDefinition} initialName={initialName} />
+      <WorkflowCanvasInner
+        initialDefinition={initialDefinition}
+        initialName={initialName}
+        showTour={showTour}
+      />
     </ReactFlowProvider>
   )
 }
