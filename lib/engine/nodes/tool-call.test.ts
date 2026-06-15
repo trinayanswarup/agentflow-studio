@@ -11,10 +11,21 @@
  *  5. Unknown template variable → friendly validation error (empty value)
  */
 
-import { it, expect, beforeAll } from 'vitest'
+import { it, expect, beforeAll, vi } from 'vitest'
 import { executeToolCall } from './tool-call'
 import { createContext, setNodeOutput } from '@/lib/engine/context'
 import type { ToolCallNode } from '@/lib/types'
+
+vi.mock('@/lib/llm/groq', () => ({
+  callLLM: vi.fn().mockResolvedValue({
+    text: '{"score": 8, "reasoning": "Good output."}',
+    tokensUsed: 10,
+    toolCalls: [],
+    provider: 'groq',
+  }),
+  groqChat: vi.fn(),
+  GROQ_MODEL: 'llama-3.3-70b-versatile',
+}))
 
 // Ensure tools are registered before any test runs.
 beforeAll(async () => {
