@@ -14,7 +14,7 @@ export const leadQualificationDefinition: WorkflowDefinition = {
       id: 'search_1',
       type: 'tool_call',
       label: 'Web Search',
-      position: { x: 280, y: 120 },
+      position: { x: 280, y: 150 },
       config: {
         toolName: 'web_search',
         args: {
@@ -27,7 +27,7 @@ export const leadQualificationDefinition: WorkflowDefinition = {
       id: 'extract_1',
       type: 'llm_call',
       label: 'Extract Profile',
-      position: { x: 280, y: 240 },
+      position: { x: 280, y: 300 },
       config: {
         system:
           'You are a data extraction assistant. Return valid JSON only — no markdown, no prose. Use the web_fetch tool to read a URL from the search results if you need more detail.',
@@ -40,7 +40,7 @@ export const leadQualificationDefinition: WorkflowDefinition = {
       id: 'score_1',
       type: 'tool_call',
       label: 'Score Lead',
-      position: { x: 280, y: 380 },
+      position: { x: 280, y: 450 },
       config: {
         toolName: 'evaluate_output',
         args: {
@@ -54,14 +54,14 @@ export const leadQualificationDefinition: WorkflowDefinition = {
       id: 'review_1',
       type: 'human_pause',
       label: 'Human Review',
-      position: { x: 280, y: 520 },
+      position: { x: 280, y: 600 },
       config: { message: 'Review the lead qualification score before finalizing.' },
     },
     {
       id: 'output_1',
       type: 'output',
       label: 'Qualified Lead Report',
-      position: { x: 280, y: 640 },
+      position: { x: 280, y: 750 },
       config: {
         template: '{{score_1_output}}\n\n---\nCompany profile:\n{{extract_1_output}}',
       },

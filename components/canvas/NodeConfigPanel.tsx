@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { MousePointer2 } from 'lucide-react'
 import type { NodeType } from '@/lib/types'
 import type { AgentNode } from './types'
 import { NODE_LABELS, NODE_TEXT_CLS } from './types'
@@ -204,8 +205,26 @@ export function NodeConfigPanel({ node, onUpdate, nodes = [] }: Props) {
 
   if (!node) {
     return (
-      <aside className="flex w-72 flex-shrink-0 flex-col items-center justify-center border-l border-gray-800 bg-gray-950 p-4">
-        <p className="text-center text-sm text-gray-500">Click a node to configure it.</p>
+      <aside className="flex w-72 flex-shrink-0 flex-col items-center justify-center gap-4 border-l border-gray-800 bg-gray-950 p-6 text-center">
+        <MousePointer2 size={28} className="text-gray-600" />
+        <div>
+          <p className="text-sm font-medium text-gray-300">Select a node to configure</p>
+          <p className="mt-1 text-[12px] leading-snug text-gray-600">
+            or run the workflow to watch the trace
+          </p>
+        </div>
+        <div className="flex flex-col gap-2">
+          {['Click any node to edit', 'Drag from sidebar to add', 'Connect handles to wire'].map(
+            (hint) => (
+              <span
+                key={hint}
+                className="rounded-full border border-gray-800 bg-gray-900 px-3 py-1 text-[11px] text-gray-500"
+              >
+                {hint}
+              </span>
+            )
+          )}
+        </div>
       </aside>
     )
   }

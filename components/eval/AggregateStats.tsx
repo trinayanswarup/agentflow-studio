@@ -25,7 +25,7 @@ export function AggregateStats({ results }: Props) {
       label: 'Pass Rate',
       value: `${passRate}%`,
       sub: `${passCount} / ${results.length} passed`,
-      color: passRate >= 70 ? 'text-green-300' : passRate >= 40 ? 'text-yellow-300' : 'text-red-300',
+      color: passRate >= 80 ? 'text-green-300' : passRate >= 60 ? 'text-yellow-300' : 'text-red-300',
     },
     { label: 'Avg Score', value: avgScore, sub: 'out of 10', color: 'text-white' },
     {
@@ -45,12 +45,12 @@ export function AggregateStats({ results }: Props) {
   return (
     <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
       {stats.map((s) => (
-        <div key={s.label} className="rounded-xl border border-gray-800 bg-gray-900 p-4">
+        <div key={s.label} className="rounded-xl border border-gray-800 bg-gray-900 p-6">
           <div className="text-[11px] font-semibold uppercase tracking-wider text-gray-500">
             {s.label}
           </div>
-          <div className={`mt-1 text-2xl font-bold tabular-nums ${s.color}`}>{s.value}</div>
-          <div className="text-[11px] text-gray-500">{s.sub}</div>
+          <div className={`mt-2 text-4xl font-bold tabular-nums ${s.color}`}>{s.value}</div>
+          <div className="mt-1 text-[11px] text-gray-500">{s.sub}</div>
         </div>
       ))}
     </div>

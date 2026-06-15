@@ -65,6 +65,10 @@ async function executeNode(
       return executeHumanPause(node, context, previousOutput)
     case 'output':
       return executeOutput(node, context, previousOutput)
+    default: {
+      const type = (node as unknown as { type: string }).type
+      throw new Error(`Unknown node type: "${type}"`)
+    }
   }
 }
 

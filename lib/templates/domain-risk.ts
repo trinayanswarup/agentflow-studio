@@ -12,14 +12,14 @@ export const domainRiskDefinition: WorkflowDefinition = {
       id: 'input_1',
       type: 'input',
       label: 'Domain',
-      position: { x: 280, y: 0 },
+      position: { x: 350, y: 0 },
       config: { placeholder: 'e.g. example.com' },
     },
     {
       id: 'search_1',
       type: 'tool_call',
       label: 'Search Incidents',
-      position: { x: 280, y: 120 },
+      position: { x: 350, y: 150 },
       config: {
         toolName: 'web_search',
         args: { query: '{{input_1_output}} data breach security incident' },
@@ -29,7 +29,7 @@ export const domainRiskDefinition: WorkflowDefinition = {
       id: 'extract_1',
       type: 'llm_call',
       label: 'Extract Risk Signals',
-      position: { x: 280, y: 240 },
+      position: { x: 350, y: 300 },
       config: {
         system:
           'You are a cybersecurity analyst assistant. Return valid JSON only — no markdown, no prose. You may use the web_fetch tool to read a result URL if you need more detail.',
@@ -42,7 +42,7 @@ export const domainRiskDefinition: WorkflowDefinition = {
       id: 'score_1',
       type: 'tool_call',
       label: 'Risk Score',
-      position: { x: 280, y: 360 },
+      position: { x: 350, y: 450 },
       config: {
         toolName: 'evaluate_output',
         args: {
@@ -56,14 +56,14 @@ export const domainRiskDefinition: WorkflowDefinition = {
       id: 'risk_gate_1',
       type: 'condition',
       label: 'High Risk?',
-      position: { x: 280, y: 480 },
+      position: { x: 350, y: 600 },
       config: { expression: '{{score_1_output}} >= 7' },
     },
     {
       id: 'review_1',
       type: 'human_pause',
       label: 'Analyst Review',
-      position: { x: 520, y: 600 },
+      position: { x: 100, y: 780 },
       config: {
         message:
           'High cybersecurity risk detected for {{input_1_output}}. An analyst should review before this is finalized.',
@@ -73,7 +73,7 @@ export const domainRiskDefinition: WorkflowDefinition = {
       id: 'output_1',
       type: 'output',
       label: 'Risk Report',
-      position: { x: 280, y: 720 },
+      position: { x: 350, y: 980 },
       config: {
         template:
           'Domain: {{input_1_output}}\n\nRisk score: {{score_1_output}}\n\nSignals:\n{{extract_1_output}}',

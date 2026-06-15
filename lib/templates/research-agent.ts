@@ -23,7 +23,7 @@ export const researchAgentDefinition: WorkflowDefinition = {
       id: 'search_1',
       type: 'tool_call',
       label: 'Web Search',
-      position: { x: 280, y: 120 },
+      position: { x: 280, y: 150 },
       config: {
         toolName: 'web_search',
         // Fixed keywords keep the retry query short (<400 chars) so Tavily accepts
@@ -39,7 +39,7 @@ export const researchAgentDefinition: WorkflowDefinition = {
       id: 'brief_1',
       type: 'llm_call',
       label: 'Write Brief',
-      position: { x: 280, y: 240 },
+      position: { x: 280, y: 300 },
       config: {
         system:
           'You are a research analyst. Write a thorough, well-sourced brief. Prefer specific facts, figures, and named sources over generalities.',
@@ -52,7 +52,7 @@ export const researchAgentDefinition: WorkflowDefinition = {
       id: 'quality_1',
       type: 'tool_call',
       label: 'Quality Score',
-      position: { x: 280, y: 360 },
+      position: { x: 280, y: 450 },
       config: {
         toolName: 'evaluate_output',
         args: {
@@ -66,7 +66,7 @@ export const researchAgentDefinition: WorkflowDefinition = {
       id: 'quality_gate_1',
       type: 'condition',
       label: 'Needs Improvement?',
-      position: { x: 280, y: 480 },
+      position: { x: 280, y: 600 },
       // Low score → true → loop back to search and retry.
       config: { expression: '{{quality_1_output}} < 7' },
     },
@@ -74,7 +74,7 @@ export const researchAgentDefinition: WorkflowDefinition = {
       id: 'output_1',
       type: 'output',
       label: 'Research Brief',
-      position: { x: 280, y: 600 },
+      position: { x: 530, y: 780 },
       config: {
         template: '{{brief_1_output}}\n\n---\nQuality assessment:\n{{quality_1_output}}',
       },

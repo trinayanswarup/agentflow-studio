@@ -14,7 +14,7 @@ export const helloDefinition: WorkflowDefinition = {
       id: 'llm_1',
       type: 'llm_call',
       label: 'Answer',
-      position: { x: 200, y: 120 },
+      position: { x: 200, y: 150 },
       config: {
         prompt: 'Answer the user\'s question: {{input_1_output}}',
         system: '',
@@ -25,7 +25,7 @@ export const helloDefinition: WorkflowDefinition = {
       id: 'output_1',
       type: 'output',
       label: 'Output',
-      position: { x: 200, y: 260 },
+      position: { x: 200, y: 300 },
       config: { template: '' },
     },
   ],

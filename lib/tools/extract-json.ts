@@ -2,6 +2,26 @@ import { z } from 'zod'
 import { defineTool, registerTool } from '@/lib/tools/registry'
 import { callLLM } from '@/lib/llm/groq'
 
+/**
+ * Traverse a dotted path through a plain JavaScript value.
+ * Throws a descriptive error if any segment is missing or not traversable.
+ */
+export function jsonPath(input: unknown, path: string): unknown {
+  const parts = path.split('.')
+  let current: unknown = input
+  for (const key of parts) {
+    if (typeof current !== 'object' || current === null) {
+      throw new Error(`Path "${path}" not found: "${key}" is not traversable`)
+    }
+    const record = current as Record<string, unknown>
+    if (!(key in record)) {
+      throw new Error(`Path "${path}" not found: key "${key}" does not exist`)
+    }
+    current = record[key]
+  }
+  return current
+}
+
 const schema = z.object({
   text: z.string().min(1).describe('The unstructured text to extract data from'),
   instructions: z

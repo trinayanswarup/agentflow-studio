@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { createServerClient } from '@/lib/supabase/server'
 import { WorkflowRunner } from '@/lib/engine/runner'
 import { callLLM } from '@/lib/llm/groq'
+import { scoreExactMatch, scoreContains } from '@/lib/eval/scoring'
 import type { WorkflowDefinition } from '@/lib/types'
 
 // ── Request validation ────────────────────────────────────────────────────────
@@ -43,15 +44,6 @@ function isWorkflowDefinition(value: unknown): value is WorkflowDefinition {
   return typeof v.name === 'string' && Array.isArray(v.nodes) && Array.isArray(v.edges)
 }
 
-function scoreExactMatch(actual: string, expected: string): { score: number; pass: boolean } {
-  const pass = actual.trim().toLowerCase() === expected.trim().toLowerCase()
-  return { score: pass ? 10 : 0, pass }
-}
-
-function scoreContains(actual: string, expected: string): { score: number; pass: boolean } {
-  const pass = actual.toLowerCase().includes(expected.toLowerCase())
-  return { score: pass ? 10 : 0, pass }
-}
 
 async function scoreLlmJudge(
   actual: string,

@@ -4,16 +4,13 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { EvalResultsTable, type EvalResult } from '@/components/eval/EvalResultsTable'
 import { AggregateStats } from '@/components/eval/AggregateStats'
+import { TEMPLATES } from '@/lib/templates'
 
 type Workflow = { id: string; name: string; created_at: string }
 type ScoringStrategy = 'exact_match' | 'contains' | 'llm_judge'
 
-const DEFAULT_TEST_CASES = JSON.stringify(
-  [
-    { input: 'Nord Security', expected: 'cybersecurity' },
-    { input: 'Revolut', expected: 'fintech' },
-    { input: 'Spotify', expected: 'music streaming' },
-  ],
+const GENERIC_PLACEHOLDER = JSON.stringify(
+  [{ input: 'your input here', expected: 'expected output here' }],
   null,
   2
 )
@@ -32,7 +29,7 @@ export default function EvalPage() {
   const [workflowFetchError, setWorkflowFetchError] = useState<string | null>(null)
   const [selectedWorkflowId, setSelectedWorkflowId] = useState('')
   const [strategy, setStrategy] = useState<ScoringStrategy>('contains')
-  const [testCasesJson, setTestCasesJson] = useState(DEFAULT_TEST_CASES)
+  const [testCasesJson, setTestCasesJson] = useState(GENERIC_PLACEHOLDER)
   const [results, setResults] = useState<EvalResult[] | null>(null)
   const [status, setStatus] = useState<'idle' | 'running' | 'error'>('idle')
   const [errorMsg, setErrorMsg] = useState('')
@@ -57,6 +54,18 @@ export default function EvalPage() {
     }
     void loadWorkflows()
   }, [])
+
+  useEffect(() => {
+    if (!selectedWorkflowId || workflows.length === 0) return
+    const wf = workflows.find((w) => w.id === selectedWorkflowId)
+    if (!wf) return
+    const tpl = TEMPLATES.find((t) => t.name === wf.name)
+    setTestCasesJson(
+      tpl
+        ? JSON.stringify(tpl.defaultTestCases, null, 2)
+        : GENERIC_PLACEHOLDER
+    )
+  }, [selectedWorkflowId, workflows])
 
   async function handleRunEvals() {
     if (!selectedWorkflowId || status === 'running') return
@@ -110,80 +119,83 @@ export default function EvalPage() {
         <span className="text-sm font-semibold text-gray-100">Eval Runner</span>
       </div>
 
-      <div className="mx-auto max-w-5xl p-6">
-        {/* Config panel */}
-        <div className="mb-6 rounded-xl border border-gray-800 bg-gray-900 p-5">
-          <div className="mb-4 flex flex-wrap items-end gap-6">
-            {/* Workflow selector */}
-            <div className="min-w-[200px] flex-1">
-              <label
-                htmlFor="workflow-select"
-                className="mb-1 block text-xs font-semibold uppercase tracking-wider text-gray-400"
-              >
-                Workflow
-              </label>
-              {loadingWorkflows ? (
-                <p className="text-sm text-gray-500">Loading…</p>
-              ) : workflowFetchError ? (
-                <p className="text-sm text-red-400">{workflowFetchError}</p>
-              ) : workflows.length === 0 ? (
-                <p className="text-sm text-gray-500">
-                  No saved workflows.{' '}
-                  <button
-                    type="button"
-                    onClick={() => router.push('/editor')}
-                    className="text-accent-400 underline hover:text-accent-300"
-                  >
-                    Build one in the Editor.
-                  </button>
-                </p>
-              ) : (
-                <select
-                  id="workflow-select"
-                  value={selectedWorkflowId}
-                  onChange={(e) => setSelectedWorkflowId(e.target.value)}
-                  className="w-full rounded-lg border border-gray-700 bg-gray-800 px-3 py-1.5 text-sm text-gray-100 transition-colors focus:border-accent-500 focus:outline-none"
-                >
-                  {workflows.map((wf) => (
-                    <option key={wf.id} value={wf.id}>
-                      {wf.name}
-                    </option>
-                  ))}
-                </select>
-              )}
-            </div>
+      {results === null ? (
+        /* ── STATE 1: Form ──────────────────────────────────────────────── */
+        <div className="mx-auto max-w-2xl px-6 py-12">
+          <h1 className="mb-1 text-2xl font-semibold text-white">Run Evals</h1>
+          <p className="mb-8 text-sm text-gray-500">
+            Pick a saved workflow, choose a scoring strategy, and supply test cases as JSON.
+          </p>
 
-            {/* Scoring strategy */}
-            <div>
-              <label className="mb-1 block text-xs font-semibold uppercase tracking-wider text-gray-400">
-                Scoring Strategy
-              </label>
-              <div className="flex gap-2">
-                {STRATEGIES.map((s) => (
-                  <button
-                    key={s.value}
-                    type="button"
-                    onClick={() => setStrategy(s.value)}
-                    title={s.hint}
-                    className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
-                      strategy === s.value
-                        ? 'bg-accent-600 text-white'
-                        : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
-                    }`}
-                  >
-                    {s.label}
-                  </button>
-                ))}
-              </div>
-              <p className="mt-1 text-[11px] text-gray-500">
-                {STRATEGIES.find((s) => s.value === strategy)?.hint}
+          {/* Workflow selector */}
+          <div className="mb-6">
+            <label
+              htmlFor="workflow-select"
+              className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-gray-400"
+            >
+              Workflow
+            </label>
+            {loadingWorkflows ? (
+              <p className="text-sm text-gray-500">Loading…</p>
+            ) : workflowFetchError ? (
+              <p className="text-sm text-red-400">{workflowFetchError}</p>
+            ) : workflows.length === 0 ? (
+              <p className="text-sm text-gray-500">
+                No saved workflows.{' '}
+                <button
+                  type="button"
+                  onClick={() => router.push('/editor')}
+                  className="text-accent-400 underline hover:text-accent-300"
+                >
+                  Build one in the Editor.
+                </button>
               </p>
+            ) : (
+              <select
+                id="workflow-select"
+                value={selectedWorkflowId}
+                onChange={(e) => setSelectedWorkflowId(e.target.value)}
+                className="w-full rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-gray-100 transition-colors focus:border-accent-500 focus:outline-none"
+              >
+                {workflows.map((wf) => (
+                  <option key={wf.id} value={wf.id}>
+                    {wf.name}
+                  </option>
+                ))}
+              </select>
+            )}
+          </div>
+
+          {/* Scoring strategy */}
+          <div className="mb-6">
+            <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-gray-400">
+              Scoring Strategy
+            </label>
+            <div className="flex gap-2">
+              {STRATEGIES.map((s) => (
+                <button
+                  key={s.value}
+                  type="button"
+                  onClick={() => setStrategy(s.value)}
+                  title={s.hint}
+                  className={`rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
+                    strategy === s.value
+                      ? 'bg-accent-600 text-white'
+                      : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
+                  }`}
+                >
+                  {s.label}
+                </button>
+              ))}
             </div>
+            <p className="mt-1.5 text-[11px] text-gray-500">
+              {STRATEGIES.find((s) => s.value === strategy)?.hint}
+            </p>
           </div>
 
           {/* Test cases textarea */}
-          <div className="mb-4">
-            <label className="mb-1 block text-xs font-semibold uppercase tracking-wider text-gray-400">
+          <div className="mb-6">
+            <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-gray-400">
               Test Cases (JSON)
             </label>
             <textarea
@@ -196,16 +208,14 @@ export default function EvalPage() {
             />
             <p className="mt-1 text-[11px] text-gray-500">
               Format:{' '}
-              <span className="font-mono">
-                {`[{"input": "...", "expected": "..."}]`}
-              </span>
+              <span className="font-mono">{`[{"input": "...", "expected": "..."}]`}</span>
               {' '}· Max 20 cases.
             </p>
           </div>
 
           {/* Error banner */}
           {status === 'error' && (
-            <div className="mb-3 rounded-lg border border-red-900/60 bg-red-950/40 px-4 py-2 text-sm text-red-300">
+            <div className="mb-4 rounded-lg border border-red-900/60 bg-red-950/40 px-4 py-2.5 text-sm text-red-300">
               {errorMsg}
             </div>
           )}
@@ -215,11 +225,11 @@ export default function EvalPage() {
             type="button"
             onClick={handleRunEvals}
             disabled={isRunning || !selectedWorkflowId || workflows.length === 0}
-            className="rounded-lg bg-accent-600 px-6 py-2 text-sm font-semibold text-white transition-colors hover:bg-accent-500 disabled:cursor-not-allowed disabled:opacity-50"
+            className="w-full rounded-lg bg-accent-600 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-accent-500 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {isRunning ? (
-              <span className="flex items-center gap-2">
-                <span className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-white border-t-transparent" />
+              <span className="flex items-center justify-center gap-2">
+                <span className="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-white border-t-transparent" />
                 Running Evals…
               </span>
             ) : (
@@ -227,24 +237,32 @@ export default function EvalPage() {
             )}
           </button>
           {isRunning && (
-            <p className="mt-2 text-xs text-gray-500">
+            <p className="mt-2 text-center text-xs text-gray-500">
               Running up to 3 cases concurrently. This may take a minute…
             </p>
           )}
         </div>
+      ) : (
+        /* ── STATE 2: Results ───────────────────────────────────────────── */
+        <div className="px-6 py-6">
+          <button
+            type="button"
+            onClick={() => setResults(null)}
+            className="mb-6 flex items-center gap-1.5 text-sm text-gray-400 transition-colors hover:text-gray-200"
+          >
+            ← Run again
+          </button>
 
-        {/* Results */}
-        {results !== null && results.length > 0 && (
-          <div className="space-y-4">
-            <AggregateStats results={results} />
-            <EvalResultsTable results={results} />
-          </div>
-        )}
-
-        {results !== null && results.length === 0 && (
-          <p className="py-8 text-center text-sm text-gray-500">No results returned.</p>
-        )}
-      </div>
+          {results.length === 0 ? (
+            <p className="py-8 text-center text-sm text-gray-500">No results returned.</p>
+          ) : (
+            <div className="space-y-6">
+              <AggregateStats results={results} />
+              <EvalResultsTable results={results} />
+            </div>
+          )}
+        </div>
+      )}
     </div>
   )
 }

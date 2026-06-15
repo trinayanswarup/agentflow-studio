@@ -105,3 +105,35 @@ it('web_fetch: unknown template variable resolves to empty → friendly error', 
 
   await expect(executeToolCall(node, ctx)).rejects.toThrow(/web_fetch needs 'url'/)
 })
+
+// ── 8. web_search missing query → friendly error ──────────────────────────────
+
+it('web_search: missing query argument returns friendly error', async () => {
+  const node = makeNode('web_search', {})
+  const ctx = createContext('test input')
+
+  await expect(executeToolCall(node, ctx)).rejects.toThrow(/query/)
+})
+
+// ── 9. send_webhook non-URL → friendly error ──────────────────────────────────
+
+it('send_webhook: non-URL value for url returns friendly error', async () => {
+  const node = makeNode('send_webhook', { url: 'not-a-url', payload: 'hello' })
+  const ctx = createContext('test input')
+
+  await expect(executeToolCall(node, ctx)).rejects.toThrow(/url/)
+})
+
+// ── 10–11. jsonPath utility (pure, no API calls) ──────────────────────────────
+
+import { jsonPath } from '@/lib/tools/extract-json'
+
+it('extract_json: valid path extracts correct value from nested JSON', () => {
+  const data: unknown = JSON.parse('{"company":{"name":"Acme"}}')
+  expect(jsonPath(data, 'company.name')).toBe('Acme')
+})
+
+it('extract_json: missing path returns friendly error containing "not found"', () => {
+  const data: unknown = JSON.parse('{"company":{"name":"Acme"}}')
+  expect(() => jsonPath(data, 'company.ceo')).toThrow(/not found|path/)
+})
