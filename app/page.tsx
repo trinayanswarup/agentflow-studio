@@ -219,7 +219,7 @@ export default function LandingPage() {
           {(
             [
               {
-                emoji: '🎨',
+                dot: 'bg-blue-500',
                 name: 'Visual Workflow Builder',
                 description: 'Drag nodes onto a canvas, connect them, and run your agent pipeline in seconds.',
                 href: '/editor',
@@ -227,7 +227,7 @@ export default function LandingPage() {
                 cta: 'Open editor',
               },
               {
-                emoji: '📋',
+                dot: 'bg-violet-500',
                 name: 'Template Library',
                 description: 'Load a pre-built workflow in one click — lead qualification, research, domain risk.',
                 href: '/templates',
@@ -235,7 +235,7 @@ export default function LandingPage() {
                 cta: 'Browse templates',
               },
               {
-                emoji: '💬',
+                dot: 'bg-orange-500',
                 name: 'Document Q&A',
                 description: 'Upload a PDF or Word doc, ask questions, and get cited answers from the content.',
                 href: '/documents',
@@ -243,7 +243,7 @@ export default function LandingPage() {
                 cta: 'Upload a document',
               },
               {
-                emoji: '⚡',
+                dot: 'bg-orange-500',
                 name: 'PDF → Workflow Import',
                 description: 'Upload a process document and Groq auto-generates a workflow from its steps.',
                 href: '/documents',
@@ -251,7 +251,7 @@ export default function LandingPage() {
                 cta: 'Try it',
               },
               {
-                emoji: '📊',
+                dot: 'bg-green-500',
                 name: 'Workflow Insights',
                 description: 'Run counts, avg completion times, and step failure rates across all workflows.',
                 href: '/analytics',
@@ -259,7 +259,7 @@ export default function LandingPage() {
                 cta: 'View insights',
               },
               {
-                emoji: '🔗',
+                dot: 'bg-yellow-500',
                 name: 'Export & Share',
                 description: 'Download any workflow as JSON or generate a public read-only share link.',
                 href: '/editor',
@@ -272,8 +272,8 @@ export default function LandingPage() {
               key={f.name}
               className="flex flex-col gap-3 rounded-xl border border-gray-800 bg-gray-900 p-5 transition-colors hover:border-gray-700"
             >
-              <div className="flex items-center gap-3">
-                <span className="text-xl">{f.emoji}</span>
+              <div className="flex items-center gap-2">
+                <div className={`h-2.5 w-2.5 flex-shrink-0 rounded-full ${f.dot}`} />
                 <h3 className="text-sm font-semibold text-white">{f.name}</h3>
               </div>
               <p className="flex-1 text-xs leading-relaxed text-gray-400">{f.description}</p>
