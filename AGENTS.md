@@ -355,3 +355,136 @@ git commit -m "restore: before session X"
 ```
 
 If a session goes wrong, `git reset --hard HEAD` to restore.
+
+---
+
+# Phase 3 — Expansion (Sessions 13–18)
+
+Phase 1 (engine + UI) and Phase 2 (templates, UX, polish) are complete. Phase 3 adds knowledge-aware features: export, analytics, semantic search, document Q&A, and PDF → workflow import.
+
+**Before starting Session 13:** run the SQL migrations in CLAUDE.md (Phase 3 Supabase tables) in your Supabase SQL editor. Enable pgvector first.
+
+---
+
+## Session 13 — JSON Export + Shareable Links
+
+**Goal**: Let users export a workflow as JSON and share a read-only link.
+
+**What to build**:
+
+- Export button in the editor toolbar → `JSON.stringify(definition_json, null, 2)` → browser download as `[workflow-name].json`
+- `POST /api/workflows/[id]/share` → generates 8-char nanoid slug → inserts into `workflow_shares` → returns `{ slug, url }`
+- `GET /api/share/[slug]` → looks up workflow by slug → returns definition
+- `app/share/[slug]/page.tsx` → read-only React Flow canvas (no sidebar, no save, no run). Shows workflow name + "Shared workflow — read only" badge.
+- Share button in editor → calls share API → shows copyable URL in a modal
+
+**Done condition**:
+
+- Export button downloads a valid `.json` file
+- Share button generates a URL, opening it shows the read-only canvas
+- `npm run build` passes clean
+
+---
+
+## Session 14 — Analytics Dashboard
+
+**Goal**: A `/analytics` page showing insight across all workflow runs.
+
+**What to build**:
+
+- `GET /api/analytics` → queries `runs`, `run_steps`, `workflow_runs` → returns: runs per workflow, avg completion time per workflow, failure rate per step (node_label + error count / total), last run timestamp per workflow
+- `app/analytics/page.tsx` — "Workflow Insights" heading. Four sections using recharts (already in project): run counts bar chart, avg completion time bar chart, step failure heatmap table (color-coded red/yellow/green), last run table
+- Link "Insights" in main nav
+- Update `lib/engine/runner.ts` to insert into `workflow_runs` on run_complete and run_error (fire-and-forget)
+
+**Done condition**:
+
+- `/analytics` loads with real data from at least 3 runs
+- Bar charts render, failure heatmap shows color-coded rates
+- `npm run build` passes clean
+
+---
+
+## Session 15 — RAG Infrastructure + Semantic Workflow Search
+
+**Goal**: Embed workflows on save, enable natural language search over them.
+
+**What to build**:
+
+- `lib/rag/embeddings.ts` — `embed(text: string): Promise<number[]>` via HF Inference API fetch. Model: `sentence-transformers/all-MiniLM-L6-v2`. Returns float[384].
+- `lib/rag/chunker.ts` — `chunkText(text, chunkSize=500, overlap=50): string[]`. Word-based splitting.
+- `POST /api/rag/embed-workflow` — fetches workflow, serializes name + node labels + prompts, embeds, upserts into `workflow_embeddings`
+- Update `POST /api/workflows` save — fire-and-forget embed after insert
+- `POST /api/rag/search` — embeds query, cosine similarity via `<=>` operator, returns top 5 with score
+- Search bar on `/templates` — debounced 400ms, replaces grid with ranked results + match % score
+- NL suggestion on editor empty state — "Describe what you want to automate" → top 3 workflow suggestions
+
+**Done condition**:
+
+- Saving a workflow creates a row in `workflow_embeddings`
+- "security domain check" → CyberOps template ranks first
+- "qualify leads" → Lead Qualification ranks first
+- `npm run build` passes clean
+
+---
+
+## Session 16 — Document Upload + Q&A
+
+**Goal**: Upload PDF/Word docs, ask questions, get cited answers.
+
+**What to build**:
+
+- `npm install pdf-parse mammoth`
+- `lib/rag/parser.ts` — `parseFile(buffer, filetype): Promise<string>` using pdf-parse and mammoth
+- `POST /api/documents/upload` — multipart form, parse → chunk → embed each chunk → insert `documents` + `document_chunks`. Returns `{ docId, filename, chunkCount }`.
+- `POST /api/documents/ask` — `{ docId, question }` → embed question → cosine search over chunks for that doc → top 5 → Groq with citation prompt → `{ answer, sources: [{chunkIndex, content}] }`
+- `app/documents/page.tsx` — split panel: left = doc list + upload/drag-drop; right = chat per selected doc with cited source cards below each answer
+- Link "Documents" in main nav
+
+**Done condition**:
+
+- Upload PDF → appears in list with chunk count
+- Ask question → answer with source citations appears
+- `npm run build` passes clean
+
+---
+
+## Session 17 — PDF → Workflow Import
+
+**Goal**: Upload a process doc, Groq generates a workflow from it.
+
+**What to build**:
+
+- `POST /api/documents/import-workflow` — multipart form → parse text via `lib/rag/parser.ts` → send to Groq with extraction prompt → parse JSON response → validate with Zod against WorkflowDefinition schema → return definition
+- Groq system prompt: "You are a workflow extraction assistant. Given a process document, identify the repeatable steps and output a JSON workflow definition with this shape: { nodes: AgentNode[], edges: AgentEdge[] }. Use only these node types: input, llm_call, tool_call, condition, human_pause, output. Return only valid JSON, no markdown."
+- "Import as Workflow" button in `/documents` doc list → calls import API → navigates to `/editor` with generated workflow pre-loaded
+- In `/editor`, detect imported definition and pre-load onto canvas. User reviews, edits, saves.
+- Invalid/unparseable response shows friendly error, does not crash
+
+**Done condition**:
+
+- Upload a simple 3-step SOP → workflow appears on canvas with matching nodes
+- User can edit and save it
+- `npm run build` passes clean
+
+---
+
+## Session 18 — Tests + Polish + Deploy
+
+**Goal**: Test coverage for Phase 3, fix rough edges, ship.
+
+**What to build**:
+
+- `lib/rag/embeddings.test.ts` — mock HF fetch, assert returns float[384]
+- `lib/rag/chunker.test.ts` — 1000-word text produces correct chunk count with overlap
+- `app/api/documents/route.test.ts` — mock pdf-parse + mammoth, assert upload returns docId + chunkCount
+- `app/api/rag/search.test.ts` — mock embeddings + Supabase, assert ranked results returned
+- `app/api/analytics/route.test.ts` — mock Supabase, assert response shape correct
+- Fix any UI rough edges from manual testing
+- Add `HUGGINGFACE_API_KEY` to Vercel env vars, deploy
+
+**Done condition**:
+
+- All new tests pass, existing 50 tests still pass
+- `/documents`, `/analytics`, `/share/[slug]` load on deployed URL
+- `npm run build` passes clean

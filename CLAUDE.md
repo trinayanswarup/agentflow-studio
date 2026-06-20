@@ -254,3 +254,126 @@ Pre-built workflows live in `lib/templates/`. Each is `{ id, name, description, 
 - `NEXT_PUBLIC_SUPABASE_URL` must be the bare project URL (no `/rest/v1/` suffix).
 - `tsconfig.json` needs `"target": "ES2017"` or higher (ES5 can't iterate a Map).
 - localStorage is NOT available in this environment — use React state for any "seen"/"dismissed" flags.
+
+---
+
+## Phase 3 — Expansion (Sessions 13–18)
+
+### What's being added
+
+Five features that turn AgentFlow from a workflow runner into a knowledge-aware platform:
+
+1. **JSON Export + Shareable Links** — export workflow as `.json`, generate public read-only `/share/[slug]`
+2. **Analytics Dashboard** — `/analytics` page with run counts, avg latency, failure rate per step, last run
+3. **Semantic Workflow Search + NL Suggestions** — embed workflows on save, search by natural language
+4. **Document Q&A** — upload PDF/Word, chunk + embed, ask questions, get cited answers
+5. **PDF → Workflow Import** — upload SOP/process doc, Groq extracts steps, auto-generates workflow
+
+### Embeddings — Hugging Face only (free)
+
+- Model: `sentence-transformers/all-MiniLM-L6-v2` via Hugging Face Inference API
+- Dimension: `vector(384)` — NOT 1536 (that's OpenAI, which costs money)
+- Call via fetch to `https://api-inference.huggingface.co/pipeline/feature-extraction/sentence-transformers/all-MiniLM-L6-v2`
+- Auth header: `Authorization: Bearer ${process.env.HUGGINGFACE_API_KEY}`
+- Response: array of floats, length 384
+- All embedding logic lives in `lib/rag/embeddings.ts`
+
+### New env var
+
+```
+HUGGINGFACE_API_KEY=   # huggingface.co → Settings → Access Tokens → free, no card
+```
+
+### New npm packages
+
+```
+pdf-parse    # PDF text extraction
+mammoth      # Word doc (.docx) text extraction
+```
+
+No `openai` package. No paid APIs.
+
+### New Supabase tables (Phase 3)
+
+```sql
+-- Enable pgvector first (run once in Supabase SQL editor):
+create extension if not exists vector;
+
+create table workflow_embeddings (
+  id uuid primary key default gen_random_uuid(),
+  workflow_id uuid references workflows(id) on delete cascade,
+  embedding vector(384) not null,
+  content text not null,
+  created_at timestamptz default now()
+);
+create index on workflow_embeddings using ivfflat (embedding vector_cosine_ops);
+
+create table documents (
+  id uuid primary key default gen_random_uuid(),
+  filename text not null,
+  filetype text not null, -- 'pdf' | 'docx'
+  uploaded_at timestamptz default now()
+);
+
+create table document_chunks (
+  id uuid primary key default gen_random_uuid(),
+  doc_id uuid references documents(id) on delete cascade,
+  chunk_index integer not null,
+  content text not null,
+  embedding vector(384) not null,
+  created_at timestamptz default now()
+);
+create index on document_chunks using ivfflat (embedding vector_cosine_ops);
+
+create table workflow_runs (
+  id uuid primary key default gen_random_uuid(),
+  workflow_id uuid references workflows(id) on delete cascade,
+  started_at timestamptz default now(),
+  completed_at timestamptz,
+  status text not null, -- 'completed' | 'failed'
+  failed_step text
+);
+
+create table workflow_shares (
+  id uuid primary key default gen_random_uuid(),
+  workflow_id uuid references workflows(id) on delete cascade,
+  slug text unique not null,
+  is_public boolean default true,
+  created_at timestamptz default now()
+);
+```
+
+### New API routes (Phase 3)
+
+```
+POST /api/rag/embed-workflow       → embed and upsert workflow into workflow_embeddings
+POST /api/rag/search               → semantic search over workflow_embeddings
+POST /api/documents/upload         → parse, chunk, embed, store doc + chunks
+POST /api/documents/ask            → Q&A against document chunks
+POST /api/documents/import-workflow → PDF text → Groq → WorkflowDefinition JSON
+GET  /api/analytics                → aggregated stats from runs + run_steps + workflow_runs
+POST /api/workflows/[id]/share     → generate slug, insert workflow_shares row
+GET  /api/share/[slug]             → return workflow definition for public read-only view
+```
+
+### New pages (Phase 3)
+
+```
+/analytics          → Workflow Insights dashboard
+/documents          → Doc upload + Q&A split panel
+/share/[slug]       → Public read-only workflow canvas
+```
+
+### Chunking strategy
+
+- Chunk size: 500 tokens (approximate — split by word count, ~4 chars/token)
+- Overlap: 50 tokens
+- All chunking logic in `lib/rag/chunker.ts`
+
+### What does NOT change in Phase 3
+
+- The execution engine — untouched
+- Existing node types, tools, templates
+- Existing API routes (workflows CRUD, run, stream, approve, eval)
+- Existing Supabase tables (workflows, runs, run_steps, human_approvals)
+- The canvas editor, trace panel, eval runner

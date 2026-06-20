@@ -287,3 +287,97 @@ SUPABASE_SERVICE_ROLE_KEY   # server-side only, never exposed
 - [ ] `npm run build` passes clean
 - [ ] Deployed on Vercel
 - [ ] No API keys or secrets visible in the UI or client-side code
+
+---
+
+## Phase 3 — Expansion
+
+### Sessions
+
+| Session | Focus                                         | Status |
+| ------- | --------------------------------------------- | ------ |
+| 13      | JSON Export + Shareable Links                 | ⬜     |
+| 14      | Analytics Dashboard (Workflow Insights)       | ⬜     |
+| 15      | RAG Infrastructure + Semantic Workflow Search | ⬜     |
+| 16      | Document Upload + Q&A                         | ⬜     |
+| 17      | PDF → Workflow Import                         | ⬜     |
+| 18      | Tests + Polish + Deploy                       | ⬜     |
+
+### New pages
+
+- `/analytics` — Workflow Insights dashboard
+- `/documents` — Document upload + Q&A split panel + workflow import
+- `/share/[slug]` — Public read-only workflow canvas
+
+### New tables (run SQL in Supabase before Session 13)
+
+```sql
+create extension if not exists vector;
+
+create table workflow_embeddings (
+  id uuid primary key default gen_random_uuid(),
+  workflow_id uuid references workflows(id) on delete cascade,
+  embedding vector(384) not null,
+  content text not null,
+  created_at timestamptz default now()
+);
+create index on workflow_embeddings using ivfflat (embedding vector_cosine_ops);
+
+create table documents (
+  id uuid primary key default gen_random_uuid(),
+  filename text not null,
+  filetype text not null,
+  uploaded_at timestamptz default now()
+);
+
+create table document_chunks (
+  id uuid primary key default gen_random_uuid(),
+  doc_id uuid references documents(id) on delete cascade,
+  chunk_index integer not null,
+  content text not null,
+  embedding vector(384) not null,
+  created_at timestamptz default now()
+);
+create index on document_chunks using ivfflat (embedding vector_cosine_ops);
+
+create table workflow_runs (
+  id uuid primary key default gen_random_uuid(),
+  workflow_id uuid references workflows(id) on delete cascade,
+  started_at timestamptz default now(),
+  completed_at timestamptz,
+  status text not null,
+  failed_step text
+);
+
+create table workflow_shares (
+  id uuid primary key default gen_random_uuid(),
+  workflow_id uuid references workflows(id) on delete cascade,
+  slug text unique not null,
+  is_public boolean default true,
+  created_at timestamptz default now()
+);
+```
+
+### New env var
+
+```
+HUGGINGFACE_API_KEY=    # huggingface.co → Settings → Access Tokens → free
+NEXT_PUBLIC_BASE_URL=   # e.g. http://localhost:3000 locally, your Vercel URL in production
+```
+
+### New packages
+
+```
+npm install pdf-parse mammoth nanoid @types/pdf-parse
+```
+
+### Phase 3 success criteria
+
+- [ ] Export button downloads valid workflow JSON
+- [ ] Share link opens read-only canvas
+- [ ] /analytics shows real run data with charts
+- [ ] Document upload + Q&A works for PDF and DOCX
+- [ ] PDF → workflow import generates a valid canvas workflow
+- [ ] Semantic search returns relevant results ranked by similarity
+- [ ] All Phase 3 tests pass, existing 50 tests still pass
+- [ ] Deployed on Vercel with all new env vars set
