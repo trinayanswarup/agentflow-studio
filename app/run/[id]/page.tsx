@@ -261,6 +261,8 @@ export default function RunPage() {
             pendingHumanPause={pendingHumanPause}
             onApprovalDecision={clearPendingHumanPause}
             onRunAgain={handleRunAgain}
+            workflowId={id}
+            workflowName={workflowName}
           />
         </div>
       </div>

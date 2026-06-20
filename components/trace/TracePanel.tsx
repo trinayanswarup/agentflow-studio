@@ -15,6 +15,8 @@ interface Props {
   pendingHumanPause?: PendingPause | null
   onApprovalDecision?: () => void
   onRunAgain?: () => void
+  workflowId?: string
+  workflowName?: string
 }
 
 function StatusPill({ runStatus }: { runStatus: Props['runStatus'] }) {
@@ -55,15 +57,63 @@ export function TracePanel({
   pendingHumanPause,
   onApprovalDecision,
   onRunAgain,
+  workflowId,
+  workflowName,
 }: Props) {
   const bottomRef = useRef<HTMLDivElement>(null)
   const [copied, setCopied] = useState(false)
+  const [shareUrl, setShareUrl] = useState<string | null>(null)
+  const [copiedShare, setCopiedShare] = useState(false)
+  const [sharing, setSharing] = useState(false)
+  const [exporting, setExporting] = useState(false)
 
   function handleCopy() {
     if (!finalOutput) return
     void navigator.clipboard.writeText(finalOutput).then(() => {
       setCopied(true)
       setTimeout(() => setCopied(false), 2000)
+    })
+  }
+
+  async function handleExport() {
+    if (!workflowId || exporting) return
+    setExporting(true)
+    try {
+      const res = await fetch(`/api/workflows/${workflowId}`)
+      const data = (await res.json()) as { workflow: { name: string; definition_json: unknown } }
+      const filename = (workflowName ?? data.workflow.name).replace(/\s+/g, '-').toLowerCase()
+      const blob = new Blob([JSON.stringify(data.workflow.definition_json, null, 2)], {
+        type: 'application/json',
+      })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `${filename}.json`
+      a.click()
+      URL.revokeObjectURL(url)
+    } finally {
+      setExporting(false)
+    }
+  }
+
+  async function handleShare() {
+    if (!workflowId || sharing) return
+    setSharing(true)
+    try {
+      const res = await fetch(`/api/workflows/${workflowId}/share`, { method: 'POST' })
+      const data = (await res.json()) as { url: string }
+      setShareUrl(data.url)
+      setCopiedShare(false)
+    } finally {
+      setSharing(false)
+    }
+  }
+
+  function handleCopyShare() {
+    if (!shareUrl) return
+    void navigator.clipboard.writeText(shareUrl).then(() => {
+      setCopiedShare(true)
+      setTimeout(() => setCopiedShare(false), 2000)
     })
   }
 
@@ -152,6 +202,47 @@ export function TracePanel({
               </button>
             )}
           </div>
+          {workflowId && (
+            <div className="mt-2 flex gap-2">
+              <button
+                type="button"
+                onClick={() => void handleExport()}
+                disabled={exporting}
+                className="flex-1 rounded-lg border border-gray-700 px-3 py-1.5 text-xs font-semibold text-gray-300 transition-colors hover:border-gray-600 hover:text-white disabled:opacity-50"
+              >
+                {exporting ? 'Exporting…' : 'Export workflow'}
+              </button>
+              <button
+                type="button"
+                onClick={() => void handleShare()}
+                disabled={sharing}
+                className="flex-1 rounded-lg border border-gray-700 px-3 py-1.5 text-xs font-semibold text-gray-300 transition-colors hover:border-gray-600 hover:text-white disabled:opacity-50"
+              >
+                {sharing ? 'Sharing…' : 'Share workflow'}
+              </button>
+            </div>
+          )}
+          {shareUrl && (
+            <div className="mt-2 rounded-lg border border-gray-700 bg-gray-800 p-3">
+              <p className="mb-1.5 truncate font-mono text-[11px] text-gray-300">{shareUrl}</p>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={handleCopyShare}
+                  className="flex-1 rounded-lg bg-accent-600 px-3 py-1 text-xs font-semibold text-white transition-colors hover:bg-accent-500"
+                >
+                  {copiedShare ? '✓ Copied!' : 'Copy link'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setShareUrl(null); setCopiedShare(false) }}
+                  className="rounded-lg border border-gray-700 px-3 py-1 text-xs text-gray-400 transition-colors hover:bg-gray-700"
+                >
+                  Dismiss
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>

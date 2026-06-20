@@ -37,6 +37,8 @@ export interface RunResult {
   trace: TraceEvent[]
   totalTokens: number
   totalLatencyMs: number
+  /** Node ID of the step that caused the run to fail, if any. */
+  failedStep?: string
 }
 
 function errorMessage(error: unknown): string {
@@ -202,7 +204,7 @@ export class WorkflowRunner extends EventEmitter {
           trace
         )
         this.emitTrace({ type: 'run_error', error: message, timestamp: now() }, trace)
-        return { status: 'failed', output: '', trace, totalTokens, totalLatencyMs: Date.now() - runStarted }
+        return { status: 'failed', output: '', trace, totalTokens, totalLatencyMs: Date.now() - runStarted, failedStep: current.id }
       }
 
       setNodeOutput(context, current.id, result.output)

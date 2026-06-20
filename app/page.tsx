@@ -142,6 +142,15 @@ export default function LandingPage() {
           <Link href="/templates" className="transition-colors hover:text-gray-100">
             Templates
           </Link>
+          <Link href="/library" className="transition-colors hover:text-gray-100">
+            Library
+          </Link>
+          <Link href="/analytics" className="transition-colors hover:text-gray-100">
+            Insights
+          </Link>
+          <Link href="/documents" className="transition-colors hover:text-gray-100">
+            Documents
+          </Link>
           <Link href="/eval" className="transition-colors hover:text-gray-100">
             Eval Runner
           </Link>
@@ -230,6 +239,9 @@ export default function LandingPage() {
       <footer className="mx-auto max-w-6xl px-6 pb-16">
         <nav className="flex flex-wrap gap-6 border-t border-gray-800 pt-8 text-sm text-gray-500">
           <Link href="/templates" className="hover:text-gray-300">Templates</Link>
+          <Link href="/library" className="hover:text-gray-300">Library</Link>
+          <Link href="/analytics" className="hover:text-gray-300">Insights</Link>
+          <Link href="/documents" className="hover:text-gray-300">Documents</Link>
           <Link href="/how-it-works" className="hover:text-gray-300">How it works</Link>
           <Link href="/editor" className="hover:text-gray-300">Editor</Link>
           <Link href="/eval" className="hover:text-gray-300">Eval Runner</Link>

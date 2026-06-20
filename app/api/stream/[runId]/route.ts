@@ -31,7 +31,7 @@ export async function GET(
   // Fetch the run to get input and workflow_id.
   const { data: run, error: runError } = await supabase
     .from('runs')
-    .select('id, input, status, workflow_id')
+    .select('id, input, status, workflow_id, created_at')
     .eq('id', runId)
     .single()
 
@@ -83,7 +83,14 @@ export async function GET(
 
       runner
         .run(run.input as string)
-        .then(async () => {
+        .then(async (result) => {
+          void persistWorkflowRun(
+            supabase,
+            (run as { workflow_id: string }).workflow_id,
+            (run as { created_at: string }).created_at,
+            result.status,
+            result.failedStep
+          )
           controller.close()
         })
         .catch((error: unknown) => {
@@ -108,6 +115,26 @@ export async function GET(
       'X-Accel-Buffering': 'no',
     },
   })
+}
+
+async function persistWorkflowRun(
+  supabase: ReturnType<typeof createServerClient>,
+  workflowId: string,
+  startedAt: string,
+  status: 'completed' | 'failed',
+  failedStep?: string
+): Promise<void> {
+  try {
+    await supabase.from('workflow_runs').insert({
+      workflow_id: workflowId,
+      started_at: startedAt,
+      completed_at: new Date().toISOString(),
+      status,
+      failed_step: failedStep ?? null,
+    })
+  } catch (err) {
+    console.error('[stream] workflow_runs insert failed', err)
+  }
 }
 
 async function persistEvent(

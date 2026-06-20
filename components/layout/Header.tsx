@@ -6,8 +6,13 @@ import { usePathname } from 'next/navigation'
 export function Header() {
   const pathname = usePathname()
 
-  // Landing page has its own nav; run and editor have full-screen top bars.
-  if (pathname === '/' || pathname.startsWith('/run') || pathname.startsWith('/editor')) return null
+  // Landing page has its own nav; run, editor, and documents have full-screen layouts.
+  if (
+    pathname === '/' ||
+    pathname.startsWith('/run') ||
+    pathname.startsWith('/editor') ||
+    pathname.startsWith('/documents')
+  ) return null
 
   return (
     <header className="flex h-12 flex-shrink-0 items-center justify-between border-b border-gray-800 bg-gray-950/80 px-6 backdrop-blur-sm">
@@ -20,6 +25,15 @@ export function Header() {
       <nav className="flex items-center gap-6 text-sm text-gray-400">
         <Link href="/templates" className="transition-colors hover:text-gray-100">
           Templates
+        </Link>
+        <Link href="/library" className="transition-colors hover:text-gray-100">
+          Library
+        </Link>
+        <Link href="/analytics" className="transition-colors hover:text-gray-100">
+          Insights
+        </Link>
+        <Link href="/documents" className="transition-colors hover:text-gray-100">
+          Documents
         </Link>
         <Link href="/how-it-works" className="transition-colors hover:text-gray-100">
           How it works

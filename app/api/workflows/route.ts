@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import { createServerClient } from '@/lib/supabase/server'
 import type { WorkflowDefinition } from '@/lib/types'
+import { embedWorkflow } from '@/lib/rag/embed-workflow'
 
 const createSchema = z.object({
   name: z.string().min(1).max(200),
@@ -16,7 +17,7 @@ export async function GET() {
   const supabase = createServerClient()
   const { data, error } = await supabase
     .from('workflows')
-    .select('id, name, created_at')
+    .select('id, name, created_at, definition_json')
     .order('created_at', { ascending: false })
 
   if (error) {
@@ -51,5 +52,9 @@ export async function POST(request: Request) {
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
+
+  // Fire-and-forget: embed the new workflow for semantic search
+  void embedWorkflow((data as { id: string }).id).catch(() => undefined)
+
   return NextResponse.json({ workflow: data }, { status: 201 })
 }
