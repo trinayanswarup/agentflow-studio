@@ -15,8 +15,11 @@ node_modules/
 .next/
 out/
 
-# Vercel
+
 .vercel
+CLAUDE.md
+AGENTS.md
+
 
 # TypeScript
 *.tsbuildinfo
