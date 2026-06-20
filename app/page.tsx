@@ -210,6 +210,87 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* What AgentFlow can do */}
+      <section className="mx-auto max-w-6xl px-6 pb-16">
+        <h2 className="mb-6 text-xs font-semibold uppercase tracking-wider text-gray-500">
+          What AgentFlow can do
+        </h2>
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {(
+            [
+              {
+                emoji: '🎨',
+                name: 'Visual Workflow Builder',
+                description: 'Drag nodes onto a canvas, connect them, and run your agent pipeline in seconds.',
+                href: '/editor',
+                note: null,
+                cta: 'Open editor',
+              },
+              {
+                emoji: '📋',
+                name: 'Template Library',
+                description: 'Load a pre-built workflow in one click — lead qualification, research, domain risk.',
+                href: '/templates',
+                note: null,
+                cta: 'Browse templates',
+              },
+              {
+                emoji: '💬',
+                name: 'Document Q&A',
+                description: 'Upload a PDF or Word doc, ask questions, and get cited answers from the content.',
+                href: '/documents',
+                note: null,
+                cta: 'Upload a document',
+              },
+              {
+                emoji: '⚡',
+                name: 'PDF → Workflow Import',
+                description: 'Upload a process document and Groq auto-generates a workflow from its steps.',
+                href: '/documents',
+                note: 'Use the Import as Workflow button',
+                cta: 'Try it',
+              },
+              {
+                emoji: '📊',
+                name: 'Workflow Insights',
+                description: 'Run counts, avg completion times, and step failure rates across all workflows.',
+                href: '/analytics',
+                note: null,
+                cta: 'View insights',
+              },
+              {
+                emoji: '🔗',
+                name: 'Export & Share',
+                description: 'Download any workflow as JSON or generate a public read-only share link.',
+                href: '/editor',
+                note: 'Save a workflow first, then use the Export / Share buttons',
+                cta: 'Open editor',
+              },
+            ] as const
+          ).map((f) => (
+            <div
+              key={f.name}
+              className="flex flex-col gap-3 rounded-xl border border-gray-800 bg-gray-900 p-5 transition-colors hover:border-gray-700"
+            >
+              <div className="flex items-center gap-3">
+                <span className="text-xl">{f.emoji}</span>
+                <h3 className="text-sm font-semibold text-white">{f.name}</h3>
+              </div>
+              <p className="flex-1 text-xs leading-relaxed text-gray-400">{f.description}</p>
+              {f.note && (
+                <p className="text-[10px] text-gray-600">{f.note}</p>
+              )}
+              <Link
+                href={f.href}
+                className="self-start rounded-lg border border-gray-700 bg-gray-800 px-3 py-1.5 text-xs font-medium text-gray-300 transition-colors hover:bg-gray-700 hover:text-gray-100"
+              >
+                {f.cta} →
+              </Link>
+            </div>
+          ))}
+        </div>
+      </section>
+
       {/* What it demonstrates */}
       <section className="mx-auto max-w-6xl px-6 pb-16">
         <h2 className="mb-6 text-xs font-semibold uppercase tracking-wider text-gray-500">

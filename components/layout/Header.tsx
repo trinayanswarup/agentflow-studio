@@ -6,12 +6,13 @@ import { usePathname } from 'next/navigation'
 export function Header() {
   const pathname = usePathname()
 
-  // Landing page has its own nav; run, editor, and documents have full-screen layouts.
+  // Landing, run, editor, documents, and share all have their own full-screen layouts.
   if (
     pathname === '/' ||
     pathname.startsWith('/run') ||
     pathname.startsWith('/editor') ||
-    pathname.startsWith('/documents')
+    pathname.startsWith('/documents') ||
+    pathname.startsWith('/share')
   ) return null
 
   return (

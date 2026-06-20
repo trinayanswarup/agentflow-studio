@@ -107,8 +107,11 @@ export default function LibraryPage() {
           ← Home
         </Link>
         <h1 className="mt-4 text-3xl font-bold tracking-tight text-white">Workflow Library</h1>
-        <p className="mt-2 max-w-xl text-gray-400">
-          All your saved workflows. Open in the editor, run, or share with a link.
+        <p className="mt-2 max-w-xl text-sm leading-relaxed text-gray-400">
+          Every workflow you have saved — open in the editor, run directly, or share with a public link.
+        </p>
+        <p className="mt-1 max-w-xl text-sm leading-relaxed text-gray-500">
+          Save a workflow from the editor to add it here. Workflows are stored in Supabase.
         </p>
 
         {/* Grid */}

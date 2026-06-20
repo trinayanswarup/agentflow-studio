@@ -97,13 +97,20 @@ export default function SharePage() {
     <div className="flex h-screen flex-col bg-gray-950 text-white">
       {/* Top bar */}
       <div className="flex h-12 flex-shrink-0 items-center gap-3 border-b border-gray-800 bg-gray-950 px-4">
-        <a href="/" className="text-sm text-gray-400 hover:text-gray-200">
-          ← Home
+        <a href="/" className="flex-shrink-0 text-sm font-semibold tracking-tight text-gray-100 transition-colors hover:text-white">
+          AgentFlow Studio
         </a>
-        <span className="text-sm font-semibold text-gray-100">{name}</span>
-        <span className="rounded-full border border-gray-700 bg-gray-800 px-2.5 py-0.5 text-[11px] text-gray-400">
-          Shared workflow — read only
+        <span className="text-gray-700">/</span>
+        <span className="truncate text-sm font-medium text-gray-200">{name}</span>
+        <span className="flex-shrink-0 rounded-full border border-gray-700 bg-gray-800 px-2.5 py-0.5 text-[11px] text-gray-400">
+          read only
         </span>
+        <a
+          href="/templates"
+          className="ml-auto flex-shrink-0 rounded-lg bg-accent-600 px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-accent-500"
+        >
+          Build your own →
+        </a>
       </div>
 
       {/* Canvas */}

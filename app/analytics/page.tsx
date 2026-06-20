@@ -84,8 +84,11 @@ export default function AnalyticsPage() {
           ← Home
         </Link>
         <h1 className="mt-4 text-3xl font-bold tracking-tight text-white">Workflow Insights</h1>
-        <p className="mt-2 text-gray-400">
-          Execution history, completion times, and step failure rates across all workflows.
+        <p className="mt-2 max-w-xl text-sm leading-relaxed text-gray-400">
+          Run counts, avg completion times, and step failure rates across all your workflows.
+        </p>
+        <p className="mt-1 max-w-xl text-sm leading-relaxed text-gray-500">
+          Data updates as you run more workflows — each execution adds to the history below.
         </p>
 
         {loading ? (

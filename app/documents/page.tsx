@@ -214,6 +214,17 @@ export default function DocumentsPage() {
       {/* ── LEFT PANEL (30%) ── */}
       <div className="flex w-80 flex-shrink-0 flex-col border-r border-gray-800 bg-gray-900/30">
 
+        {/* Page heading */}
+        <div className="px-4 pb-1 pt-5">
+          <h1 className="text-sm font-semibold text-gray-100">Documents</h1>
+          <p className="mt-1 text-[11px] leading-relaxed text-gray-500">
+            Upload PDFs or Word docs to ask questions with cited answers.
+          </p>
+          <p className="text-[11px] leading-relaxed text-gray-600">
+            Or import a process doc to auto-generate a workflow on the canvas.
+          </p>
+        </div>
+
         {/* Upload area */}
         <div className="p-4">
           <div

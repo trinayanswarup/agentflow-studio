@@ -55,8 +55,11 @@ export default function TemplatesPage() {
           ← Home
         </Link>
         <h1 className="mt-4 text-3xl font-bold tracking-tight text-white">Templates</h1>
-        <p className="mt-2 max-w-xl text-gray-400">
-          Pre-built workflows ready to run. Load one into the editor and run it in seconds.
+        <p className="mt-2 max-w-xl text-sm leading-relaxed text-gray-400">
+          Pre-built workflows ready to load and run — each one is fully configured and works out of the box.
+        </p>
+        <p className="mt-1 max-w-xl text-sm leading-relaxed text-gray-500">
+          Use the search bar to find workflows by description, or browse by category below.
         </p>
 
         {/* Search bar */}
