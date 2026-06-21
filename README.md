@@ -2,7 +2,26 @@
 
 A visual AI workflow builder with a custom execution engine. Drag nodes onto a canvas, connect them, and run them. The engine walks the graph, calls LLMs via Groq function-calling, invokes tools, streams live trace events over SSE, and handles human-in-the-loop review — built from scratch, no LangChain or orchestration framework.
 
-**Live**: [your-vercel-url.vercel.app] · **Repo**: [github.com/trinayanswarup/agentflow-studio](https://github.com/trinayanswarup/agentflow-studio)
+**Live**: [agentflow-studio-six.vercel.app](https://agentflow-studio-six.vercel.app) · **Repo**: [github.com/trinayanswarup/agentflow-studio](https://github.com/trinayanswarup/agentflow-studio)
+
+---
+
+## Screenshots
+
+![Live trace panel](public/screenshot-home.png)
+_Homepage_
+
+![Live trace panel](public/screenshot-trace.png)
+_Nodes light up in real time as the workflow executes. Each step shows latency and token count._
+
+![Workflow canvas](public/screenshot-canvas.png)
+_Drag-and-drop canvas with 6 node types. Click any node to configure it._
+
+![Human pause approval](public/screenshot-approval.png)
+_Workflows pause for human review. Approve the output, edit it, or reject and stop the run._
+
+![Document Q&A](public/screenshot-docs.png)
+_Upload a PDF or Word doc, ask questions, get answers with cited source excerpts._
 
 ---
 
