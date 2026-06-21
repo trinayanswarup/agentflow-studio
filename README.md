@@ -173,14 +173,14 @@ npm run dev
 **.env.local**:
 
 ```
-GROQ_API_KEY=              # groq.com — free
-GEMINI_API_KEY=            # aistudio.google.com — free
-TAVILY_API_KEY=            # tavily.com — free, 1000 req/month
-HUGGINGFACE_API_KEY=       # huggingface.co — free
-NEXT_PUBLIC_SUPABASE_URL=  # bare project URL — no /rest/v1/ suffix
+GROQ_API_KEY=
+GEMINI_API_KEY=
+TAVILY_API_KEY=
+HUGGINGFACE_API_KEY=
+NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_ANON_KEY=
-SUPABASE_SERVICE_ROLE_KEY= # server-side only, never expose client-side
-NEXT_PUBLIC_BASE_URL=      # http://localhost:3000 locally
+SUPABASE_SERVICE_ROLE_KEY=
+NEXT_PUBLIC_BASE_URL=
 ```
 
 **Supabase migrations**: Enable pgvector first, then run the SQL in `PRD.md` → Phase 3 section.
