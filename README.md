@@ -217,6 +217,11 @@ npm run build   # must pass clean
 
 ---
 
+## Development notes
+
+Detailed planning docs (CLAUDE.md, PRD.md, AGENTS.md) are kept private. They contain AI coding instructions, internal build quirks, and session-specific workflow notes used during active development with Claude Code.
+Public versions are committed for reference.
+
 ## Built by
 
 Trinayan — Computer Engineering, Vilnius Tech  
