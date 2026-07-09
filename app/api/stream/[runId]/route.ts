@@ -1,6 +1,7 @@
 import { createServerClient } from '@/lib/supabase/server'
 import type { WorkflowDefinition, TraceEvent } from '@/lib/types'
 import { WorkflowRunner } from '@/lib/engine/runner'
+import { flushObservability } from '@/lib/observability/langfuse'
 
 // Allow up to 5 min for runs with human_pause nodes (requires Vercel Pro).
 export const maxDuration = 300
@@ -64,7 +65,10 @@ export async function GET(
   }
 
   const definition = workflowRow.definition_json
-  const runner = new WorkflowRunner(definition, runId)
+  const runner = new WorkflowRunner(definition, runId, {
+    workflowId: (run as { workflow_id: string }).workflow_id,
+    source: 'editor',
+  })
 
   const stream = new ReadableStream({
     start(controller) {
@@ -91,9 +95,10 @@ export async function GET(
             result.status,
             result.failedStep
           )
+          await flushObservability()
           controller.close()
         })
-        .catch((error: unknown) => {
+        .catch(async (error: unknown) => {
           const message = error instanceof Error ? error.message : String(error)
           try {
             controller.enqueue(
@@ -102,6 +107,7 @@ export async function GET(
           } catch {
             // ignore
           }
+          await flushObservability()
           controller.close()
         })
     },

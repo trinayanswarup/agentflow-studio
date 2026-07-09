@@ -24,6 +24,7 @@ loadEnvLocal()
 
 import type { TraceEvent, WorkflowDefinition } from '../lib/types'
 import { WorkflowRunner } from '../lib/engine/runner'
+import { flushObservability } from '../lib/observability/langfuse'
 
 const leadEnrichmentWorkflow: WorkflowDefinition = {
   name: 'Lead Enrichment',
@@ -149,10 +150,11 @@ async function main(): Promise<void> {
   }
 
   const input = process.argv[2] ?? 'Nord Security'
-  const runner = new WorkflowRunner(leadEnrichmentWorkflow)
+  const runner = new WorkflowRunner(leadEnrichmentWorkflow, undefined, { source: 'cli' })
   runner.on('trace', printTrace)
 
   const result = await runner.run(input)
+  await flushObservability()
 
   console.log('\n================ FINAL OUTPUT ================\n')
   console.log(result.output)

@@ -13,6 +13,7 @@ import { executeToolCall } from '@/lib/engine/nodes/tool-call'
 import { executeCondition } from '@/lib/engine/nodes/condition'
 import { executeHumanPause } from '@/lib/engine/nodes/human-pause'
 import { executeOutput } from '@/lib/engine/nodes/output'
+import { startRunTrace, type TraceSource } from '@/lib/observability/langfuse'
 
 // Side-effect imports: each tool file registers itself with the registry.
 import '@/lib/tools/web-fetch'
@@ -30,6 +31,13 @@ const MAX_STEPS = 100
  * expressed; this guard caps the retries.
  */
 const MAX_ITERATIONS_PER_NODE = 3
+
+export interface WorkflowRunnerOptions {
+  /** Included in the Langfuse trace's metadata, if observability is configured. */
+  workflowId?: string
+  /** Where the run was triggered from — included in the Langfuse trace's metadata. */
+  source?: TraceSource
+}
 
 export interface RunResult {
   status: 'completed' | 'failed'
@@ -85,7 +93,8 @@ async function executeNode(
 export class WorkflowRunner extends EventEmitter {
   constructor(
     private readonly definition: WorkflowDefinition,
-    private readonly runId?: string
+    private readonly runId?: string,
+    private readonly options: WorkflowRunnerOptions = {}
   ) {
     super()
   }
@@ -142,6 +151,14 @@ export class WorkflowRunner extends EventEmitter {
     const runStarted = Date.now()
     let totalTokens = 0
 
+    const tracer = startRunTrace({
+      workflowName: this.definition.name,
+      workflowId: this.options.workflowId,
+      runId: this.runId,
+      source: this.options.source ?? 'cli',
+      input,
+    })
+
     this.emitTrace(
       { type: 'run_start', workflowName: this.definition.name, input, timestamp: now() },
       trace
@@ -152,6 +169,7 @@ export class WorkflowRunner extends EventEmitter {
       current = this.findStartNode()
     } catch (error) {
       this.emitTrace({ type: 'run_error', error: errorMessage(error), timestamp: now() }, trace)
+      tracer.finish({ output: '', status: 'failed', error: errorMessage(error) })
       return { status: 'failed', output: '', trace, totalTokens, totalLatencyMs: Date.now() - runStarted }
     }
 
@@ -165,6 +183,7 @@ export class WorkflowRunner extends EventEmitter {
       if (++steps > MAX_STEPS) {
         const error = `Run exceeded ${MAX_STEPS} steps — the workflow graph likely has a cycle`
         this.emitTrace({ type: 'run_error', error, timestamp: now() }, trace)
+        tracer.finish({ output: '', status: 'failed', error })
         return { status: 'failed', output: '', trace, totalTokens, totalLatencyMs: Date.now() - runStarted }
       }
 
@@ -188,7 +207,10 @@ export class WorkflowRunner extends EventEmitter {
       const stepStarted = Date.now()
       let result: NodeExecutionResult
       try {
-        result = await executeNode(current, context, previousOutput)
+        result = await tracer.runNodeSpan(
+          { nodeId: current.id, nodeType: current.type, label: current.label },
+          () => executeNode(current as WorkflowNode, context, previousOutput)
+        )
       } catch (error) {
         const message = errorMessage(error)
         this.emitTrace(
@@ -204,6 +226,7 @@ export class WorkflowRunner extends EventEmitter {
           trace
         )
         this.emitTrace({ type: 'run_error', error: message, timestamp: now() }, trace)
+        tracer.finish({ output: '', status: 'failed', error: message })
         return { status: 'failed', output: '', trace, totalTokens, totalLatencyMs: Date.now() - runStarted, failedStep: current.id }
       }
 
@@ -238,6 +261,7 @@ export class WorkflowRunner extends EventEmitter {
         next = this.findNextNode(current, result.branch)
       } catch (error) {
         this.emitTrace({ type: 'run_error', error: errorMessage(error), timestamp: now() }, trace)
+        tracer.finish({ output: '', status: 'failed', error: errorMessage(error) })
         return { status: 'failed', output: '', trace, totalTokens, totalLatencyMs: Date.now() - runStarted }
       }
 
@@ -271,6 +295,7 @@ export class WorkflowRunner extends EventEmitter {
       { type: 'run_complete', output: finalOutput, totalLatencyMs, totalTokens, timestamp: now() },
       trace
     )
+    tracer.finish({ output: finalOutput, status: 'completed' })
     return { status: 'completed', output: finalOutput, trace, totalTokens, totalLatencyMs }
   }
 }

@@ -17,6 +17,7 @@
     "@types/pdf-parse": "^1.1.5",
     "framer-motion": "^12.40.0",
     "groq-sdk": "^1.2.1",
+    "langfuse": "^3.38.20",
     "lucide-react": "^1.18.0",
     "mammoth": "^1.12.0",
     "nanoid": "^5.1.14",

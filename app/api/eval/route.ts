@@ -5,6 +5,7 @@ import { WorkflowRunner } from '@/lib/engine/runner'
 import { callLLM } from '@/lib/llm/groq'
 import { scoreExactMatch, scoreContains } from '@/lib/eval/scoring'
 import type { WorkflowDefinition } from '@/lib/types'
+import { flushObservability } from '@/lib/observability/langfuse'
 
 // ── Request validation ────────────────────────────────────────────────────────
 
@@ -72,6 +73,7 @@ async function scoreLlmJudge(
 
 async function runTestCase(
   definition: WorkflowDefinition,
+  workflowId: string,
   input: string,
   expected: string,
   strategy: ScoringStrategy
@@ -82,7 +84,7 @@ async function runTestCase(
   let runError: string | undefined
 
   try {
-    const runner = new WorkflowRunner(definition)
+    const runner = new WorkflowRunner(definition, undefined, { workflowId, source: 'eval' })
     const result = await runner.run(input)
     output = result.output
     tokens = result.totalTokens
@@ -187,9 +189,10 @@ export async function POST(request: Request): Promise<NextResponse> {
   const definition = workflowRow.definition_json
 
   const tasks = testCases.map(
-    (tc) => () => runTestCase(definition, tc.input, tc.expected, scoringStrategy)
+    (tc) => () => runTestCase(definition, workflowId, tc.input, tc.expected, scoringStrategy)
   )
   const results = await runWithConcurrencyLimit(tasks, 3)
+  await flushObservability()
 
   // Store each test case as a run in Supabase (fire and forget).
   for (const result of results) {

@@ -5,7 +5,8 @@ import type {
 } from 'groq-sdk/resources/chat/completions'
 import { runTool, type Tool } from '@/lib/tools/registry'
 import type { LLMResult, ToolCallRecord } from '@/lib/types'
-import { geminiChat } from '@/lib/llm/gemini'
+import { geminiChat, GEMINI_MODEL } from '@/lib/llm/gemini'
+import { recordGeneration } from '@/lib/observability/langfuse'
 
 export const GROQ_MODEL = 'llama-3.3-70b-versatile'
 const MAX_AGENT_ITERATIONS = 6
@@ -132,12 +133,38 @@ export async function groqChat(options: LLMCallOptions): Promise<LLMResult> {
 
 /**
  * Primary entry point for all LLM calls: Groq first, Gemini 1.5 Flash on failure.
+ * Records one Langfuse generation observation per call, success or failure.
  */
 export async function callLLM(options: LLMCallOptions): Promise<LLMResult> {
+  const started = Date.now()
   try {
-    return await groqChat(options)
+    let result: LLMResult
+    try {
+      result = await groqChat(options)
+    } catch (error) {
+      console.warn(`[llm] Groq failed (${errorMessage(error)}) — falling back to Gemini`)
+      result = await geminiChat(options)
+    }
+    recordGeneration({
+      provider: result.provider,
+      model: result.provider === 'gemini' ? GEMINI_MODEL : GROQ_MODEL,
+      system: options.system,
+      prompt: options.prompt,
+      output: result.text,
+      tokensUsed: result.tokensUsed,
+      toolCalls: result.toolCalls,
+      latencyMs: Date.now() - started,
+    })
+    return result
   } catch (error) {
-    console.warn(`[llm] Groq failed (${errorMessage(error)}) — falling back to Gemini`)
-    return geminiChat(options)
+    recordGeneration({
+      provider: 'groq',
+      model: `${GROQ_MODEL} (Gemini fallback also failed)`,
+      system: options.system,
+      prompt: options.prompt,
+      latencyMs: Date.now() - started,
+      error: errorMessage(error),
+    })
+    throw error
   }
 }
