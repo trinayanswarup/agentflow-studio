@@ -1,0 +1,12 @@
+{
+  "id": "research-agent-live",
+  "description": "Self-Correcting Research Agent runs end-to-end against real Groq + Tavily (loop count not asserted — real scoring is nondeterministic)",
+  "tags": ["live", "research-agent"],
+  "template": "research-agent",
+  "input": "quantum computing",
+  "assertions": [
+    { "type": "status", "expected": "completed" },
+    { "type": "contains", "value": "qubits" },
+    { "type": "max_tokens", "value": 8000 }
+  ]
+}

@@ -1,0 +1,20 @@
+{
+  "id": "domain-risk-boundary-high-mock",
+  "description": "Condition boundary: a score of exactly 7 meets the >= 7 threshold and triggers review",
+  "tags": ["mock", "domain-risk", "branching", "edge-case"],
+  "template": "domain-risk",
+  "input": "borderline-domain.example",
+  "mocks": {
+    "webSearchResults": [
+      "1. borderline-domain.example\n   https://example.com\n   Some minor exposure reported."
+    ],
+    "llmResponses": [
+      { "text": "{\"exposure\": \"minor\", \"known_breaches\": \"none found\", \"reputation_notes\": \"some concern\"}" },
+      { "text": "{\"score\": 7, \"reasoning\": \"Borderline risk signals.\"}" }
+    ]
+  },
+  "assertions": [
+    { "type": "status", "expected": "completed" },
+    { "type": "node_executed", "nodeId": "review_1" }
+  ]
+}

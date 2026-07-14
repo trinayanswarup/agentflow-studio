@@ -1,0 +1,12 @@
+{
+  "id": "lead-qual-live",
+  "description": "Lead Qualification runs end-to-end against real Groq + Tavily for a known cybersecurity company",
+  "tags": ["live", "lead-qualification"],
+  "template": "lead-qualification",
+  "input": "Nord Security",
+  "assertions": [
+    { "type": "status", "expected": "completed" },
+    { "type": "contains", "value": "cybersecurity" },
+    { "type": "max_tokens", "value": 6000 }
+  ]
+}

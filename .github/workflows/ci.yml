@@ -30,6 +30,9 @@ jobs:
       - name: Run tests
         run: npm test
 
+      - name: Run mock eval suite
+        run: npm run evals:mock
+
       - name: Build
         run: npm run build
         env:

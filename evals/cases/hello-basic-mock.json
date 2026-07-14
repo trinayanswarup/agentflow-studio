@@ -1,0 +1,17 @@
+{
+  "id": "hello-basic-mock",
+  "description": "Hello template answers a simple question end-to-end (mocked LLM)",
+  "tags": ["mock", "hello", "smoke"],
+  "template": "hello",
+  "input": "What is the capital of France?",
+  "mocks": {
+    "llmResponses": [{ "text": "Paris is the capital of France." }]
+  },
+  "assertions": [
+    { "type": "status", "expected": "completed" },
+    { "type": "contains", "value": "Paris" },
+    { "type": "node_executed", "nodeId": "output_1" },
+    { "type": "max_tokens", "value": 1000 },
+    { "type": "max_cost_usd", "value": 0.01 }
+  ]
+}

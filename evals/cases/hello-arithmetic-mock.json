@@ -1,0 +1,14 @@
+{
+  "id": "hello-arithmetic-mock",
+  "description": "Hello template handles a second, independent question (mocked LLM)",
+  "tags": ["mock", "hello"],
+  "template": "hello",
+  "input": "What is 2 + 2?",
+  "mocks": {
+    "llmResponses": [{ "text": "2 + 2 equals 4." }]
+  },
+  "assertions": [
+    { "type": "status", "expected": "completed" },
+    { "type": "contains", "value": "4" }
+  ]
+}

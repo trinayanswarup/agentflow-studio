@@ -1,0 +1,24 @@
+{
+  "id": "lead-qual-basic-mock",
+  "description": "Lead Qualification extracts a company profile and scores it (mocked search + LLM + judge)",
+  "tags": ["mock", "lead-qualification"],
+  "template": "lead-qualification",
+  "input": "Nord Security",
+  "mocks": {
+    "webSearchResults": [
+      "1. Nord Security\n   https://linkedin.com/company/nordsecurity\n   Nord Security is a cybersecurity SaaS company with 200 employees, Series B funded."
+    ],
+    "llmResponses": [
+      { "text": "{\"name\": \"Nord Security\", \"industry\": \"cybersecurity\", \"employees\": 200, \"funding\": \"Series B\", \"headquarters\": \"Vilnius\", \"description\": \"Cybersecurity SaaS company.\"}" },
+      { "text": "{\"score\": 8, \"reasoning\": \"Strong fit: B2B SaaS, Series B, active engineering team.\"}" }
+    ]
+  },
+  "assertions": [
+    { "type": "status", "expected": "completed" },
+    { "type": "node_executed", "nodeId": "review_1" },
+    { "type": "node_executed", "nodeId": "output_1" },
+    { "type": "valid_json", "nodeId": "score_1", "schema": "judgeScore" },
+    { "type": "contains", "value": "cybersecurity" },
+    { "type": "max_tokens", "value": 2000 }
+  ]
+}

@@ -1,0 +1,26 @@
+{
+  "id": "research-agent-selfcorrect-mock",
+  "description": "A thin first brief scores low, triggers one loop-back retry, and the improved second brief exits normally (mocked)",
+  "tags": ["mock", "research-agent", "loop"],
+  "template": "research-agent",
+  "input": "quantum computing",
+  "mocks": {
+    "webSearchResults": [
+      "1. Quantum Computing Overview\n   https://example.com/qc\n   Brief overview, limited detail.",
+      "1. Quantum Computing Deep Dive\n   https://example.com/qc2\n   Detailed stats: 1000+ qubits, IBM and Google milestones, $50B market by 2030."
+    ],
+    "llmResponses": [
+      { "text": "Quantum computing uses qubits." },
+      { "text": "{\"score\": 4, \"reasoning\": \"Too thin, lacks specific figures and sources.\"}" },
+      { "text": "Quantum computing uses qubits that leverage superposition and entanglement. IBM's Osprey chip has 433 qubits; Google achieved quantum supremacy in 2019. The market is projected to reach $50B by 2030 according to McKinsey." },
+      { "text": "{\"score\": 8, \"reasoning\": \"Specific figures, named sources, balanced perspective.\"}" }
+    ]
+  },
+  "assertions": [
+    { "type": "status", "expected": "completed" },
+    { "type": "node_execution_count", "nodeId": "search_1", "count": 2 },
+    { "type": "node_execution_count", "nodeId": "brief_1", "count": 2 },
+    { "type": "trace_event_absent", "eventType": "loop_limit" },
+    { "type": "contains", "value": "qubits" }
+  ]
+}

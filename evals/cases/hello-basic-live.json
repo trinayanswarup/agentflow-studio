@@ -1,0 +1,11 @@
+{
+  "id": "hello-basic-live",
+  "description": "Hello template answers a simple question end-to-end against real Groq",
+  "tags": ["live", "hello", "smoke"],
+  "template": "hello",
+  "input": "What is the capital of France?",
+  "assertions": [
+    { "type": "status", "expected": "completed" },
+    { "type": "contains", "value": "Paris" }
+  ]
+}

@@ -1,0 +1,16 @@
+{
+  "id": "hello-step-timeout-mock",
+  "description": "An artificially slow LLM call exceeds a shortened step timeout and fails with STEP_TIMEOUT (Phase 2 guardrail regression)",
+  "tags": ["mock", "hello", "guardrails"],
+  "template": "hello",
+  "input": "What is the capital of France?",
+  "mocks": {
+    "llmResponses": [{ "text": "Paris is the capital of France.", "delayMs": 200 }],
+    "env": { "WORKFLOW_STEP_TIMEOUT_MS": "20" }
+  },
+  "assertions": [
+    { "type": "status", "expected": "failed" },
+    { "type": "run_error_code", "code": "STEP_TIMEOUT" },
+    { "type": "trace_event_present", "eventType": "step_timeout", "nodeId": "llm_1" }
+  ]
+}

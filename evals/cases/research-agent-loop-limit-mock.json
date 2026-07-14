@@ -1,0 +1,29 @@
+{
+  "id": "research-agent-loop-limit-mock",
+  "description": "A brief that scores low on every attempt hits the 3-iteration loop guard and still completes via the forward path",
+  "tags": ["mock", "research-agent", "loop", "guardrails"],
+  "template": "research-agent",
+  "input": "an extremely obscure topic",
+  "mocks": {
+    "webSearchResults": [
+      "1. Thin result\n   https://example.com\n   Not much here.",
+      "1. Thin result\n   https://example.com\n   Not much here.",
+      "1. Thin result\n   https://example.com\n   Not much here."
+    ],
+    "llmResponses": [
+      { "text": "A short, generic brief." },
+      { "text": "{\"score\": 3, \"reasoning\": \"Too thin.\"}" },
+      { "text": "A short, generic brief." },
+      { "text": "{\"score\": 3, \"reasoning\": \"Too thin.\"}" },
+      { "text": "A short, generic brief." },
+      { "text": "{\"score\": 3, \"reasoning\": \"Too thin.\"}" }
+    ]
+  },
+  "assertions": [
+    { "type": "status", "expected": "completed" },
+    { "type": "node_execution_count", "nodeId": "search_1", "count": 3 },
+    { "type": "node_execution_count", "nodeId": "brief_1", "count": 3 },
+    { "type": "trace_event_present", "eventType": "loop_limit", "nodeId": "search_1" },
+    { "type": "node_executed", "nodeId": "output_1" }
+  ]
+}

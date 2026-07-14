@@ -1,0 +1,16 @@
+{
+  "id": "hello-budget-exceeded-mock",
+  "description": "A near-zero cost cap aborts the run with BUDGET_EXCEEDED (Phase 2 guardrail regression)",
+  "tags": ["mock", "hello", "guardrails"],
+  "template": "hello",
+  "input": "What is the capital of France?",
+  "mocks": {
+    "llmResponses": [{ "text": "Paris is the capital of France.", "tokensUsed": 500000 }],
+    "env": { "WORKFLOW_COST_CAP_USD": "0.0000001" }
+  },
+  "assertions": [
+    { "type": "status", "expected": "failed" },
+    { "type": "run_error_code", "code": "BUDGET_EXCEEDED" },
+    { "type": "trace_event_present", "eventType": "budget_exceeded" }
+  ]
+}

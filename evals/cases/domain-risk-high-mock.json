@@ -1,0 +1,21 @@
+{
+  "id": "domain-risk-high-mock",
+  "description": "Domain Risk Check routes a high-risk domain to analyst review (mocked judge score = 9)",
+  "tags": ["mock", "domain-risk", "branching"],
+  "template": "domain-risk",
+  "input": "breached-domain.example",
+  "mocks": {
+    "webSearchResults": [
+      "1. breached-domain.example\n   https://example.com/incident\n   Data breach disclosed in 2023, credentials leaked on the dark web."
+    ],
+    "llmResponses": [
+      { "text": "{\"exposure\": \"leaked credentials\", \"known_breaches\": \"2023 data breach\", \"reputation_notes\": \"publicly disclosed incident\"}" },
+      { "text": "{\"score\": 9, \"reasoning\": \"Confirmed breach with leaked credentials.\"}" }
+    ]
+  },
+  "assertions": [
+    { "type": "status", "expected": "completed" },
+    { "type": "node_executed", "nodeId": "review_1" },
+    { "type": "contains", "value": "Risk score" }
+  ]
+}

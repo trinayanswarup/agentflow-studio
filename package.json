@@ -8,7 +8,10 @@
     "start": "next start",
     "lint": "next lint",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "evals:mock": "vitest run --config vitest.evals.config.ts",
+    "evals:live": "tsx scripts/run-evals.ts",
+    "evals": "npm run evals:mock && npm run evals:live"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",

@@ -1,0 +1,22 @@
+{
+  "id": "domain-risk-invalid-judge-json-mock",
+  "description": "A judge that never returns valid JSON fails the step with OUTPUT_VALIDATION_FAILED after one retry (Phase 2 guardrail regression)",
+  "tags": ["mock", "domain-risk", "guardrails"],
+  "template": "domain-risk",
+  "input": "malformed-domain.example",
+  "mocks": {
+    "webSearchResults": [
+      "1. malformed-domain.example\n   https://example.com\n   Some report."
+    ],
+    "llmResponses": [
+      { "text": "{\"exposure\": \"none found\", \"known_breaches\": \"none found\", \"reputation_notes\": \"clean\"}" },
+      { "text": "this is not json at all, sorry" },
+      { "text": "still not json, sorry again" }
+    ]
+  },
+  "assertions": [
+    { "type": "status", "expected": "failed" },
+    { "type": "run_error_code", "code": "OUTPUT_VALIDATION_FAILED" },
+    { "type": "trace_event_present", "eventType": "validation_retry", "nodeId": "score_1" }
+  ]
+}

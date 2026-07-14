@@ -1,0 +1,21 @@
+{
+  "id": "lead-qual-low-score-mock",
+  "description": "Lead Qualification still completes and reports a low score for a poor-fit company (mocked)",
+  "tags": ["mock", "lead-qualification"],
+  "template": "lead-qualification",
+  "input": "Generic Corp",
+  "mocks": {
+    "webSearchResults": [
+      "1. Generic Corp\n   https://example.com\n   A small local retail business with 5 employees."
+    ],
+    "llmResponses": [
+      { "text": "{\"name\": \"Generic Corp\", \"industry\": \"retail\", \"employees\": 5, \"funding\": \"none\", \"headquarters\": \"unknown\", \"description\": \"Small local retail business.\"}" },
+      { "text": "{\"score\": 2, \"reasoning\": \"Not a B2B SaaS company, too small, no funding.\"}" }
+    ]
+  },
+  "assertions": [
+    { "type": "status", "expected": "completed" },
+    { "type": "valid_json", "nodeId": "score_1", "schema": "judgeScore" },
+    { "type": "contains", "nodeId": "score_1", "value": "Not a B2B SaaS" }
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "id": "domain-risk-live",
+  "description": "Domain Risk Check runs end-to-end against real Groq + Tavily (branch not asserted — real judge scoring is nondeterministic)",
+  "tags": ["live", "domain-risk"],
+  "template": "domain-risk",
+  "input": "wikipedia.org",
+  "assertions": [
+    { "type": "status", "expected": "completed" },
+    { "type": "contains", "value": "Risk score" }
+  ]
+}
