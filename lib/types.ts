@@ -138,6 +138,8 @@ export type TraceEvent =
       label: string
       nodeType: NodeType
       error: string
+      /** Machine-readable error code, e.g. OUTPUT_VALIDATION_FAILED, STEP_TIMEOUT. */
+      code?: string
       latencyMs: number
       timestamp: string
     }
@@ -153,13 +155,54 @@ export type TraceEvent =
       timestamp: string
     }
   | {
+      /** A structured LLM response failed schema validation and is being retried once with a correction prompt. */
+      type: 'validation_retry'
+      nodeId: string
+      label: string
+      error: string
+      timestamp: string
+    }
+  | {
+      /** A transient (429/5xx/network/timeout) call is being retried with exponential backoff. */
+      type: 'backoff_retry'
+      nodeId: string
+      label: string
+      attempt: number
+      delayMs: number
+      error: string
+      timestamp: string
+    }
+  | {
+      /** The run's estimated cost passed WORKFLOW_COST_CAP_USD — the run is being aborted. */
+      type: 'budget_exceeded'
+      nodeId: string
+      label: string
+      totalCostUsd: number
+      capUsd: number
+      timestamp: string
+    }
+  | {
+      /** A node's execution exceeded WORKFLOW_STEP_TIMEOUT_MS. */
+      type: 'step_timeout'
+      nodeId: string
+      label: string
+      timeoutMs: number
+      timestamp: string
+    }
+  | {
       type: 'run_complete'
       output: string
       totalLatencyMs: number
       totalTokens: number
       timestamp: string
     }
-  | { type: 'run_error'; error: string; timestamp: string }
+  | {
+      type: 'run_error'
+      error: string
+      /** Machine-readable error code, e.g. OUTPUT_VALIDATION_FAILED, BUDGET_EXCEEDED, STEP_TIMEOUT. */
+      code?: string
+      timestamp: string
+    }
 
 /** What a node executor returns to the runner. */
 export interface NodeExecutionResult {

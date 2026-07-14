@@ -139,6 +139,22 @@ export function useWorkflowExecution(): UseWorkflowExecutionResult {
           setPendingHumanPause((prev) => (prev?.nodeId === event.nodeId ? null : prev))
           break
 
+        case 'step_timeout':
+          updateNodeState(event.nodeId, {
+            status: 'error',
+            error: `Timed out after ${event.timeoutMs}ms`,
+          })
+          setPendingHumanPause((prev) => (prev?.nodeId === event.nodeId ? null : prev))
+          break
+
+        case 'budget_exceeded':
+          updateNodeState(event.nodeId, {
+            status: 'error',
+            error: `Budget exceeded ($${event.totalCostUsd.toFixed(4)} > $${event.capUsd})`,
+          })
+          setPendingHumanPause((prev) => (prev?.nodeId === event.nodeId ? null : prev))
+          break
+
         case 'human_pause':
           updateNodeState(event.nodeId, { status: 'waiting' })
           setPendingHumanPause({

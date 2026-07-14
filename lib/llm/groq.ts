@@ -7,6 +7,8 @@ import { runTool, type Tool } from '@/lib/tools/registry'
 import type { LLMResult, ToolCallRecord } from '@/lib/types'
 import { geminiChat, GEMINI_MODEL } from '@/lib/llm/gemini'
 import { recordGeneration } from '@/lib/observability/langfuse'
+import { withRetry } from '@/lib/engine/with-retry'
+import { recordLLMCost } from '@/lib/engine/cost-tracker'
 
 export const GROQ_MODEL = 'llama-3.3-70b-versatile'
 const MAX_AGENT_ITERATIONS = 6
@@ -73,11 +75,13 @@ export async function groqChat(options: LLMCallOptions): Promise<LLMResult> {
   for (let iteration = 0; iteration < maxIterations; iteration++) {
     let response: Groq.Chat.Completions.ChatCompletion
     try {
-      response = await getClient().chat.completions.create({
-        model: GROQ_MODEL,
-        messages,
-        ...(activeTools.length > 0 ? { tools: activeTools, tool_choice: 'auto' as const } : {}),
-      })
+      response = await withRetry(() =>
+        getClient().chat.completions.create({
+          model: GROQ_MODEL,
+          messages,
+          ...(activeTools.length > 0 ? { tools: activeTools, tool_choice: 'auto' as const } : {}),
+        })
+      )
     } catch (error) {
       // llama sometimes invents a tool name to format its final answer, which
       // Groq rejects with code "tool_use_failed". The model already has all
@@ -145,9 +149,10 @@ export async function callLLM(options: LLMCallOptions): Promise<LLMResult> {
       console.warn(`[llm] Groq failed (${errorMessage(error)}) — falling back to Gemini`)
       result = await geminiChat(options)
     }
+    const model = result.provider === 'gemini' ? GEMINI_MODEL : GROQ_MODEL
     recordGeneration({
       provider: result.provider,
-      model: result.provider === 'gemini' ? GEMINI_MODEL : GROQ_MODEL,
+      model,
       system: options.system,
       prompt: options.prompt,
       output: result.text,
@@ -155,6 +160,7 @@ export async function callLLM(options: LLMCallOptions): Promise<LLMResult> {
       toolCalls: result.toolCalls,
       latencyMs: Date.now() - started,
     })
+    recordLLMCost(model, result.tokensUsed)
     return result
   } catch (error) {
     recordGeneration({

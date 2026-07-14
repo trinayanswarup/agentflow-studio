@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { defineTool, registerTool } from '@/lib/tools/registry'
-import { callLLM } from '@/lib/llm/groq'
+import { callLLMStructured } from '@/lib/llm/structured-output'
 
 /**
  * Traverse a dotted path through a plain JavaScript value.
@@ -30,15 +30,11 @@ const schema = z.object({
     .describe('What to extract and the desired JSON shape, e.g. "company name, industry, employee count as {name, industry, employees}"'),
 })
 
-/** Pull the first {...} block out of an LLM response that may have prose around it. */
-function extractJsonBlock(text: string): string {
-  const start = text.indexOf('{')
-  const end = text.lastIndexOf('}')
-  if (start === -1 || end === -1 || end <= start) {
-    throw new Error(`LLM did not return JSON. Response started with: ${text.slice(0, 120)}`)
-  }
-  return text.slice(start, end + 1)
-}
+// The extracted shape is arbitrary (driven by freeform `instructions`), so we
+// can only validate "this is a JSON object" — not a fixed field set. That's
+// still enough to catch prose/markdown-wrapped non-JSON responses and get
+// the one-retry-with-correction behavior of callLLMStructured.
+const extractedJsonSchema = z.record(z.string(), z.unknown())
 
 export const extractJsonTool = defineTool({
   name: 'extract_json',
@@ -46,14 +42,15 @@ export const extractJsonTool = defineTool({
     'Extract structured data from unstructured text using an LLM. Returns a JSON object matching the given instructions.',
   schema,
   execute: async ({ text, instructions }) => {
-    const result = await callLLM({
-      system:
-        'You are a precise data-extraction engine. Respond with a single valid JSON object and nothing else — no markdown fences, no commentary. Use null for fields you cannot find.',
-      prompt: `Extract the following from the text below.\n\nInstructions: ${instructions}\n\nText:\n"""\n${text}\n"""`,
-    })
-    const block = extractJsonBlock(result.text)
-    const parsed: unknown = JSON.parse(block)
-    return JSON.stringify(parsed, null, 2)
+    const { data } = await callLLMStructured(
+      {
+        system:
+          'You are a precise data-extraction engine. Respond with a single valid JSON object and nothing else — no markdown fences, no commentary. Use null for fields you cannot find.',
+        prompt: `Extract the following from the text below.\n\nInstructions: ${instructions}\n\nText:\n"""\n${text}\n"""`,
+      },
+      extractedJsonSchema
+    )
+    return JSON.stringify(data, null, 2)
   },
 })
 

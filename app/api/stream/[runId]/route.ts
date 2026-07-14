@@ -186,6 +186,27 @@ async function persistEvent(
           .eq('status', 'running')
         break
 
+      case 'step_timeout':
+        await supabase
+          .from('run_steps')
+          .update({ status: 'error', error: `Step timed out after ${event.timeoutMs}ms` })
+          .eq('run_id', runId)
+          .eq('node_id', event.nodeId)
+          .eq('status', 'running')
+        break
+
+      case 'budget_exceeded':
+        await supabase
+          .from('run_steps')
+          .update({
+            status: 'error',
+            error: `Budget exceeded: $${event.totalCostUsd.toFixed(4)} > cap $${event.capUsd}`,
+          })
+          .eq('run_id', runId)
+          .eq('node_id', event.nodeId)
+          .eq('status', 'running')
+        break
+
       case 'human_pause':
         await supabase
           .from('run_steps')

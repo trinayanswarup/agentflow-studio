@@ -146,6 +146,61 @@ export function TraceItem({ event }: Props) {
         </Row>
       )
 
+    case 'validation_retry':
+      return (
+        <Row dotClass="bg-amber-400" pulse>
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-sm font-medium text-amber-300">{event.label}</span>
+            <span className="text-[10px] uppercase tracking-wider text-amber-500">
+              retrying with corrected prompt
+            </span>
+          </div>
+          <div className="mt-1 text-[11px] leading-relaxed text-gray-400">
+            Output failed validation: {preview(event.error, 140)}
+          </div>
+        </Row>
+      )
+
+    case 'backoff_retry':
+      return (
+        <Row dotClass="bg-amber-400" pulse>
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-sm font-medium text-amber-300">{event.label}</span>
+            <span className="text-[10px] uppercase tracking-wider text-amber-500">
+              retry {event.attempt} in {event.delayMs}ms
+            </span>
+          </div>
+          <div className="mt-1 text-[11px] leading-relaxed text-gray-400">
+            {preview(event.error, 140)}
+          </div>
+        </Row>
+      )
+
+    case 'step_timeout':
+      return (
+        <Row dotClass="bg-red-500">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-sm font-medium text-red-300">{event.label}</span>
+            <Metric>timed out</Metric>
+          </div>
+          <div className="mt-1.5 rounded-md border border-red-900/60 bg-red-950/40 px-2.5 py-1.5 text-[11px] leading-relaxed text-red-300">
+            No response within {event.timeoutMs}ms
+          </div>
+        </Row>
+      )
+
+    case 'budget_exceeded':
+      return (
+        <Row dotClass="bg-red-500">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-sm font-medium text-red-300">Budget exceeded</span>
+          </div>
+          <div className="mt-1.5 rounded-md border border-red-900/60 bg-red-950/40 px-2.5 py-1.5 text-[11px] leading-relaxed text-red-300">
+            {event.label} pushed the run to ${event.totalCostUsd.toFixed(4)}, over the ${event.capUsd} cap — aborting.
+          </div>
+        </Row>
+      )
+
     case 'run_complete':
       return (
         <Row dotClass="bg-green-500">

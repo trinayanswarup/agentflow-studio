@@ -2,7 +2,8 @@ import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import { createServerClient } from '@/lib/supabase/server'
 import { WorkflowRunner } from '@/lib/engine/runner'
-import { callLLM } from '@/lib/llm/groq'
+import { callLLMStructured } from '@/lib/llm/structured-output'
+import { judgeScoreSchema } from '@/lib/schemas/judge-score'
 import { scoreExactMatch, scoreContains } from '@/lib/eval/scoring'
 import type { WorkflowDefinition } from '@/lib/types'
 import { flushObservability } from '@/lib/observability/langfuse'
@@ -51,21 +52,16 @@ async function scoreLlmJudge(
   expected: string
 ): Promise<{ score: number; pass: boolean; reasoning: string }> {
   try {
-    const result = await callLLM({
-      system:
-        'You are a strict quality evaluator. Respond with only valid JSON, no markdown: {"score": <integer 1-10>, "reasoning": "<one sentence>"}. 1=completely wrong, 10=perfect match.',
-      prompt: `Criterion: ${expected}\n\nOutput to evaluate:\n"""\n${actual.slice(0, 2000)}\n"""`,
-    })
-    const start = result.text.indexOf('{')
-    const end = result.text.lastIndexOf('}')
-    if (start === -1 || end <= start) throw new Error('No JSON in judge response')
-    const parsed = JSON.parse(result.text.slice(start, end + 1)) as {
-      score?: unknown
-      reasoning?: unknown
-    }
-    const score = Math.min(10, Math.max(1, Math.round(Number(parsed.score) || 5)))
-    const reasoning = typeof parsed.reasoning === 'string' ? parsed.reasoning : ''
-    return { score, pass: score >= 7, reasoning }
+    const { data } = await callLLMStructured(
+      {
+        system:
+          'You are a strict quality evaluator. Respond with only valid JSON, no markdown: {"score": <integer 1-10>, "reasoning": "<one sentence>"}. 1=completely wrong, 10=perfect match.',
+        prompt: `Criterion: ${expected}\n\nOutput to evaluate:\n"""\n${actual.slice(0, 2000)}\n"""`,
+      },
+      judgeScoreSchema
+    )
+    const score = Math.min(10, Math.max(1, Math.round(data.score)))
+    return { score, pass: score >= 7, reasoning: data.reasoning ?? '' }
   } catch {
     return { score: 0, pass: false, reasoning: 'Judge failed' }
   }

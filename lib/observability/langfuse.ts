@@ -78,11 +78,16 @@ export interface RunTrace {
   ): Promise<NodeExecutionResult>
   /** Attach the run's final output/status to the trace. */
   finish(params: { output: string; status: 'completed' | 'failed'; error?: string }): void
+  /** Record a run-level event (e.g. budget_exceeded, step_timeout) directly
+   *  on the trace. Unlike recordEvent(), this doesn't rely on an ambient
+   *  span being active — callers (runner.ts) already hold the RunTrace. */
+  recordEvent(name: string, metadata?: Record<string, unknown>): void
 }
 
 const noopRunTrace: RunTrace = {
   runNodeSpan: (_params, fn) => fn(),
   finish: () => {},
+  recordEvent: () => {},
 }
 
 class LangfuseRunTrace implements RunTrace {
@@ -130,6 +135,14 @@ class LangfuseRunTrace implements RunTrace {
       })
     } catch (error) {
       console.warn('[observability] Failed to finalize trace', errorMessage(error))
+    }
+  }
+
+  recordEvent(name: string, metadata?: Record<string, unknown>): void {
+    try {
+      this.trace.event({ name, metadata })
+    } catch (error) {
+      console.warn('[observability] Failed to record trace event', errorMessage(error))
     }
   }
 }
@@ -207,5 +220,21 @@ export function recordGeneration(params: GenerationParams): void {
     )
   } catch (error) {
     console.warn('[observability] Failed to record generation', errorMessage(error))
+  }
+}
+
+// ── Ambient event recording ─────────────────────────────────────────────
+// For guardrail events (validation retry, backoff retry) raised from deep
+// call sites — withRetry, callLLMStructured — that don't hold a RunTrace
+// reference. Attaches to the current node span if one is active, otherwise
+// the run trace, otherwise no-ops.
+
+export function recordEvent(name: string, metadata?: Record<string, unknown>): void {
+  const parent = als.getStore()
+  if (!parent) return
+  try {
+    parent.event({ name, metadata })
+  } catch (error) {
+    console.warn('[observability] Failed to record event', errorMessage(error))
   }
 }

@@ -13,7 +13,11 @@ import { executeToolCall } from '@/lib/engine/nodes/tool-call'
 import { executeCondition } from '@/lib/engine/nodes/condition'
 import { executeHumanPause } from '@/lib/engine/nodes/human-pause'
 import { executeOutput } from '@/lib/engine/nodes/output'
-import { startRunTrace, type TraceSource } from '@/lib/observability/langfuse'
+import { startRunTrace, type TraceSource, type RunTrace } from '@/lib/observability/langfuse'
+import { runWithGuardrailContext } from '@/lib/engine/guardrail-events'
+import { CostTracker, runWithCostTracker } from '@/lib/engine/cost-tracker'
+import { withTimeout, getStepTimeoutMs, StepTimeoutError } from '@/lib/engine/with-timeout'
+import { OutputValidationError } from '@/lib/llm/structured-output'
 
 // Side-effect imports: each tool file registers itself with the registry.
 import '@/lib/tools/web-fetch'
@@ -51,6 +55,13 @@ export interface RunResult {
 
 function errorMessage(error: unknown): string {
   return error instanceof Error ? error.message : String(error)
+}
+
+/** Machine-readable code for guardrail failures, if the error carries one. */
+function errorCode(error: unknown): string | undefined {
+  if (error instanceof OutputValidationError) return error.code
+  if (error instanceof StepTimeoutError) return error.code
+  return undefined
 }
 
 function now(): string {
@@ -143,14 +154,6 @@ export class WorkflowRunner extends EventEmitter {
   }
 
   async run(input: string): Promise<RunResult> {
-    const context = createContext(input, this.runId)
-    // Build slug aliases upfront so every node output is reachable via both
-    // its UUID key ({{nodeId_output}}) and a readable alias ({{slug_output}}).
-    const slugMap = buildSlugMap(this.definition.nodes)
-    const trace: TraceEvent[] = []
-    const runStarted = Date.now()
-    let totalTokens = 0
-
     const tracer = startRunTrace({
       workflowName: this.definition.name,
       workflowId: this.options.workflowId,
@@ -158,6 +161,24 @@ export class WorkflowRunner extends EventEmitter {
       source: this.options.source ?? 'cli',
       input,
     })
+    const costTracker = new CostTracker()
+
+    return runWithCostTracker(costTracker, () => this.runInternal(input, tracer, costTracker))
+  }
+
+  private async runInternal(
+    input: string,
+    tracer: RunTrace,
+    costTracker: CostTracker
+  ): Promise<RunResult> {
+    const context = createContext(input, this.runId)
+    // Build slug aliases upfront so every node output is reachable via both
+    // its UUID key ({{nodeId_output}}) and a readable alias ({{slug_output}}).
+    const slugMap = buildSlugMap(this.definition.nodes)
+    const trace: TraceEvent[] = []
+    const runStarted = Date.now()
+    const stepTimeoutMs = getStepTimeoutMs()
+    let totalTokens = 0
 
     this.emitTrace(
       { type: 'run_start', workflowName: this.definition.name, input, timestamp: now() },
@@ -187,61 +208,84 @@ export class WorkflowRunner extends EventEmitter {
         return { status: 'failed', output: '', trace, totalTokens, totalLatencyMs: Date.now() - runStarted }
       }
 
-      visitCounts.set(current.id, (visitCounts.get(current.id) ?? 0) + 1)
+      const node: WorkflowNode = current
+      visitCounts.set(node.id, (visitCounts.get(node.id) ?? 0) + 1)
 
       this.emitTrace(
-        { type: 'step_start', nodeId: current.id, label: current.label, nodeType: current.type, timestamp: now() },
+        { type: 'step_start', nodeId: node.id, label: node.label, nodeType: node.type, timestamp: now() },
         trace
       )
 
-      if (current.type === 'human_pause') {
-        const message = current.config.message
-          ? resolveTemplate(current.config.message, context)
+      if (node.type === 'human_pause') {
+        const message = node.config.message
+          ? resolveTemplate(node.config.message, context)
           : 'Paused for human review'
         this.emitTrace(
-          { type: 'human_pause', nodeId: current.id, label: current.label, message, previousOutput, timestamp: now() },
+          { type: 'human_pause', nodeId: node.id, label: node.label, message, previousOutput, timestamp: now() },
           trace
         )
       }
+
+      const runNode = (): Promise<NodeExecutionResult> =>
+        runWithGuardrailContext(
+          { nodeId: node.id, label: node.label, emit: (event) => this.emitTrace(event, trace) },
+          () =>
+            tracer.runNodeSpan(
+              { nodeId: node.id, nodeType: node.type, label: node.label },
+              () => executeNode(node, context, previousOutput)
+            )
+        )
 
       const stepStarted = Date.now()
       let result: NodeExecutionResult
       try {
-        result = await tracer.runNodeSpan(
-          { nodeId: current.id, nodeType: current.type, label: current.label },
-          () => executeNode(current as WorkflowNode, context, previousOutput)
-        )
+        // human_pause can legitimately wait up to 5 minutes for a reviewer —
+        // it has its own long internal timeout, so the step-timeout guard
+        // (meant to catch hung LLM/tool calls) doesn't apply to it.
+        result = node.type === 'human_pause' ? await runNode() : await withTimeout(runNode, stepTimeoutMs)
       } catch (error) {
         const message = errorMessage(error)
-        this.emitTrace(
-          {
-            type: 'step_error',
-            nodeId: current.id,
-            label: current.label,
-            nodeType: current.type,
-            error: message,
-            latencyMs: Date.now() - stepStarted,
-            timestamp: now(),
-          },
-          trace
-        )
-        this.emitTrace({ type: 'run_error', error: message, timestamp: now() }, trace)
+        const code = errorCode(error)
+
+        if (error instanceof StepTimeoutError) {
+          this.emitTrace(
+            { type: 'step_timeout', nodeId: node.id, label: node.label, timeoutMs: error.timeoutMs, timestamp: now() },
+            trace
+          )
+          tracer.recordEvent('step_timeout', { nodeId: node.id, label: node.label, timeoutMs: error.timeoutMs })
+        } else {
+          this.emitTrace(
+            {
+              type: 'step_error',
+              nodeId: node.id,
+              label: node.label,
+              nodeType: node.type,
+              error: message,
+              code,
+              latencyMs: Date.now() - stepStarted,
+              timestamp: now(),
+            },
+            trace
+          )
+        }
+
+        this.emitTrace({ type: 'run_error', error: message, code, timestamp: now() }, trace)
         tracer.finish({ output: '', status: 'failed', error: message })
-        return { status: 'failed', output: '', trace, totalTokens, totalLatencyMs: Date.now() - runStarted, failedStep: current.id }
+        return { status: 'failed', output: '', trace, totalTokens, totalLatencyMs: Date.now() - runStarted, failedStep: node.id }
       }
 
-      setNodeOutput(context, current.id, result.output)
+      setNodeOutput(context, node.id, result.output)
       // Also register under the readable slug so {{slug_output}} templates work.
-      const slug = slugMap.get(current.id)
+      const slug = slugMap.get(node.id)
       if (slug) context[`${slug}_output`] = result.output
       totalTokens += result.tokensUsed
 
       this.emitTrace(
         {
           type: 'step_done',
-          nodeId: current.id,
-          label: current.label,
-          nodeType: current.type,
+          nodeId: node.id,
+          label: node.label,
+          nodeType: node.type,
           output: result.output,
           latencyMs: Date.now() - stepStarted,
           tokens: result.tokensUsed,
@@ -251,14 +295,39 @@ export class WorkflowRunner extends EventEmitter {
       )
 
       previousOutput = result.output
-      if (current.type === 'output') {
+
+      // Cost cap: checked after each step, since actual token usage is only
+      // known once the call returns — abort before scheduling further work.
+      if (costTracker.isOverCap()) {
+        this.emitTrace(
+          {
+            type: 'budget_exceeded',
+            nodeId: node.id,
+            label: node.label,
+            totalCostUsd: costTracker.totalCostUsd,
+            capUsd: costTracker.capUsd,
+            timestamp: now(),
+          },
+          trace
+        )
+        tracer.recordEvent('budget_exceeded', {
+          totalCostUsd: costTracker.totalCostUsd,
+          capUsd: costTracker.capUsd,
+        })
+        const message = `Run aborted: estimated cost $${costTracker.totalCostUsd.toFixed(4)} exceeded cap $${costTracker.capUsd}`
+        this.emitTrace({ type: 'run_error', error: message, code: 'BUDGET_EXCEEDED', timestamp: now() }, trace)
+        tracer.finish({ output: '', status: 'failed', error: message })
+        return { status: 'failed', output: '', trace, totalTokens, totalLatencyMs: Date.now() - runStarted, failedStep: node.id }
+      }
+
+      if (node.type === 'output') {
         finalOutput = result.output
         break
       }
 
       let next: WorkflowNode | null
       try {
-        next = this.findNextNode(current, result.branch)
+        next = this.findNextNode(node, result.branch)
       } catch (error) {
         this.emitTrace({ type: 'run_error', error: errorMessage(error), timestamp: now() }, trace)
         tracer.finish({ output: '', status: 'failed', error: errorMessage(error) })
@@ -281,8 +350,8 @@ export class WorkflowRunner extends EventEmitter {
           trace
         )
         next =
-          current.type === 'condition'
-            ? this.findBranchTarget(current, result.branch === 'true' ? 'false' : 'true')
+          node.type === 'condition'
+            ? this.findBranchTarget(node, result.branch === 'true' ? 'false' : 'true')
             : null
       }
 
