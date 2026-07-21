@@ -70,9 +70,14 @@ const config: Config = {
           "0%": { opacity: "0", transform: "translateY(6px)" },
           "100%": { opacity: "1", transform: "translateY(0)" },
         },
+        "loading-bar": {
+          "0%": { transform: "translateX(-100%)" },
+          "100%": { transform: "translateX(500%)" },
+        },
       },
       animation: {
         "fade-in-up": "fade-in-up 0.3s ease-out both",
+        "loading-bar": "loading-bar 1.1s ease-in-out infinite",
       },
     },
   },
