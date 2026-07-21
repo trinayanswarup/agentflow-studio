@@ -36,6 +36,9 @@ export function Header() {
         <Link href="/documents" className="transition-colors hover:text-gray-100">
           Documents
         </Link>
+        <Link href="/agent" className="transition-colors hover:text-gray-100">
+          Ask Agent
+        </Link>
         <Link href="/how-it-works" className="transition-colors hover:text-gray-100">
           How it works
         </Link>

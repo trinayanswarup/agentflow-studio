@@ -151,6 +151,9 @@ export default function LandingPage() {
           <Link href="/documents" className="transition-colors hover:text-gray-100">
             Documents
           </Link>
+          <Link href="/agent" className="transition-colors hover:text-gray-100">
+            Ask Agent
+          </Link>
           <Link href="/eval" className="transition-colors hover:text-gray-100">
             Eval Runner
           </Link>
@@ -251,6 +254,15 @@ export default function LandingPage() {
                 cta: 'Try it',
               },
               {
+                dot: 'bg-pink-500',
+                name: 'Ask Agent',
+                description:
+                  'Ask a question — the agent decides whether to search your workflows or pull execution logs, no fixed script.',
+                href: '/agent',
+                note: null,
+                cta: 'Ask a question',
+              },
+              {
                 dot: 'bg-green-500',
                 name: 'Workflow Insights',
                 description: 'Run counts, avg completion times, and step failure rates across all workflows.',
@@ -323,6 +335,7 @@ export default function LandingPage() {
           <Link href="/library" className="hover:text-gray-300">Library</Link>
           <Link href="/analytics" className="hover:text-gray-300">Insights</Link>
           <Link href="/documents" className="hover:text-gray-300">Documents</Link>
+          <Link href="/agent" className="hover:text-gray-300">Ask Agent</Link>
           <Link href="/how-it-works" className="hover:text-gray-300">How it works</Link>
           <Link href="/editor" className="hover:text-gray-300">Editor</Link>
           <Link href="/eval" className="hover:text-gray-300">Eval Runner</Link>

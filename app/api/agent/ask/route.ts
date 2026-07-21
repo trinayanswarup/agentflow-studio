@@ -2,7 +2,13 @@
  * POST /api/agent/ask
  *
  * Free-form agent endpoint. Groq decides which tool to call (if any) based
- * on the user's question — no keyword matching. Uses genuine function-calling.
+ * on the user's question, via genuine function-calling. `tool_choice` is
+ * forced (rather than left to 'auto') for two question shapes where testing
+ * showed llama-3.3 is unreliable under 'auto': a UUID in the question
+ * (forces query_workflow_logs) and discovery-style phrasing (forces
+ * search_docs) — see isDiscoveryQuestion(). Anything else is left to 'auto',
+ * which is the correct behavior for genuinely general questions that
+ * shouldn't call a tool at all.
  *
  * Trace architecture (mirrors an eval-route LLM call, not a WorkflowRunner run):
  *   - One Langfuse trace per request via startRunTrace
@@ -58,6 +64,29 @@ const SYSTEM_PROMPT =
 const UUID_PATTERN = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i
 
 /**
+ * Discovery-oriented phrasing — testing showed llama-3.3 is unreliable
+ * (~40-60% failure rate) at deciding on its own to call search_docs under
+ * tool_choice: 'auto' for these questions: it either announces intent
+ * without calling the tool ("I'll search for...") or emits raw pseudo-syntax
+ * as plain text (e.g. "<|python_tag|>search_docs(...)"). When the question
+ * has no UUID but matches one of these phrases, force search_docs the same
+ * way UUID_PATTERN forces query_workflow_logs.
+ */
+const DISCOVERY_KEYWORDS = [
+  'do you have',
+  'is there a workflow',
+  'find a workflow',
+  'workflow for',
+  'which workflow',
+  'search for',
+]
+
+function isDiscoveryQuestion(question: string): boolean {
+  const lower = question.toLowerCase()
+  return DISCOVERY_KEYWORDS.some((keyword) => lower.includes(keyword))
+}
+
+/**
  * Reinforcement pushed right after tool results are added to the transcript.
  * Without this, llama-3.3 sometimes ignores the actual tool result (even when
  * it's correctly present as a 'tool' role message) and instead describes the
@@ -81,6 +110,15 @@ const TOOL_RESULT_INSTRUCTION =
 const requestSchema = z.object({
   question: z.string().min(1).max(5000),
 })
+
+/** Shape of the JSON response — imported by app/agent/page.tsx. */
+export interface AskAgentResponse {
+  answer: string
+  toolCalled: string | null
+  toolInput: Record<string, unknown> | null
+  latencyMs: number
+  tokensUsed: number
+}
 
 // ── Groq client (lazy singleton, identical pattern to lib/llm/groq.ts) ────────
 
@@ -181,13 +219,23 @@ async function runAgentLoop(
     const iterStarted = Date.now()
     let groqResponse: Groq.Chat.Completions.ChatCompletion
 
-    // On the first iteration, if the question contains a UUID, force the model
-    // to call query_workflow_logs rather than letting it answer in prose.
-    // On subsequent iterations (tool results are in context) revert to 'auto'.
+    // On the first iteration, force tool_choice for the two question shapes
+    // where 'auto' has proven unreliable: a UUID present (force
+    // query_workflow_logs) or discovery-style phrasing (force search_docs).
+    // Otherwise leave it at 'auto' — the correct behavior for genuinely
+    // general questions that shouldn't call a tool at all. On subsequent
+    // iterations (tool results are already in context) always use 'auto'.
     let toolChoice: 'auto' | { type: 'function'; function: { name: string } } = 'auto'
-    if (iteration === 0 && activeTools.length > 0 && UUID_PATTERN.test(question)) {
-      toolChoice = { type: 'function', function: { name: 'query_workflow_logs' } }
-      console.log('[agent/ask] UUID detected in question — forcing query_workflow_logs tool call')
+    if (iteration === 0 && activeTools.length > 0) {
+      if (UUID_PATTERN.test(question)) {
+        toolChoice = { type: 'function', function: { name: 'query_workflow_logs' } }
+        console.log('[agent/ask] tool_choice path: uuid-forced — forcing query_workflow_logs tool call')
+      } else if (isDiscoveryQuestion(question)) {
+        toolChoice = { type: 'function', function: { name: 'search_docs' } }
+        console.log('[agent/ask] tool_choice path: discovery-forced — forcing search_docs tool call')
+      } else {
+        console.log('[agent/ask] tool_choice path: auto — no UUID or discovery phrasing detected')
+      }
     }
 
     // Log tool params on first iteration so we can verify what Groq receives.
@@ -342,10 +390,12 @@ export async function POST(request: Request): Promise<NextResponse> {
     latency_ms: Date.now() - requestStarted,
   })
 
-  return NextResponse.json({
+  const response: AskAgentResponse = {
     answer: result.answer,
     toolCalled: result.toolCalled,
+    toolInput: result.toolInput,
     latencyMs: result.latencyMs,
     tokensUsed: result.tokensUsed,
-  })
+  }
+  return NextResponse.json(response)
 }
