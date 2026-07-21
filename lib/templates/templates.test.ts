@@ -38,6 +38,26 @@ describe('Template registry', () => {
     }
   })
 
+  it('a human_pause node directly downstream of a condition node sets config.content', () => {
+    // A condition node's own output is just "true"/"false" — a human_pause
+    // relying on the default previousOutput fallback would show that boolean
+    // instead of real upstream data (the domain-risk bug this guards against).
+    for (const t of TEMPLATES) {
+      const { nodes, edges } = t.definition
+      for (const node of nodes) {
+        if (node.type !== 'human_pause') continue
+        const incoming = edges.find((e) => e.target === node.id)
+        const source = incoming ? nodes.find((n) => n.id === incoming.source) : undefined
+        if (source?.type === 'condition') {
+          expect(
+            (node.config as { content?: string }).content,
+            `${t.id}'s "${node.label}" sits directly after condition "${source.label}" but has no config.content override`
+          ).toBeTruthy()
+        }
+      }
+    }
+  })
+
   it('each defaultTestCase has non-empty input and expected fields', () => {
     for (const t of TEMPLATES) {
       for (const tc of t.defaultTestCases) {

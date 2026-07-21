@@ -11,7 +11,7 @@ import { buildSlugMap } from '@/lib/engine/slugs'
 import { executeLlmCall } from '@/lib/engine/nodes/llm-call'
 import { executeToolCall } from '@/lib/engine/nodes/tool-call'
 import { executeCondition } from '@/lib/engine/nodes/condition'
-import { executeHumanPause } from '@/lib/engine/nodes/human-pause'
+import { executeHumanPause, resolveHumanPauseContent } from '@/lib/engine/nodes/human-pause'
 import { executeOutput } from '@/lib/engine/nodes/output'
 import { startRunTrace, type TraceSource, type RunTrace } from '@/lib/observability/langfuse'
 import { runWithGuardrailContext } from '@/lib/engine/guardrail-events'
@@ -220,8 +220,13 @@ export class WorkflowRunner extends EventEmitter {
         const message = node.config.message
           ? resolveTemplate(node.config.message, context)
           : 'Paused for human review'
+        // The reviewable content defaults to previousOutput, but that's wrong
+        // when this node sits right after a `condition` (its output is just
+        // "true"/"false") — resolveHumanPauseContent honors node.config.content
+        // when set, so the review card shows the actual upstream data instead.
+        const reviewContent = resolveHumanPauseContent(node, context, previousOutput)
         this.emitTrace(
-          { type: 'human_pause', nodeId: node.id, label: node.label, message, previousOutput, timestamp: now() },
+          { type: 'human_pause', nodeId: node.id, label: node.label, message, previousOutput: reviewContent, timestamp: now() },
           trace
         )
       }

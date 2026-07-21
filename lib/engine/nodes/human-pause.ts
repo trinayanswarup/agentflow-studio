@@ -24,6 +24,23 @@ function sleep(ms: number): Promise<void> {
 }
 
 /**
+ * The content a reviewer should see and edit. Defaults to the raw
+ * previousOutput (whatever the immediately preceding node in the graph
+ * produced) — but a human_pause node directly downstream of a `condition`
+ * node would otherwise show that condition's own "true"/"false" output
+ * instead of the actual upstream data. `node.config.content`, when set,
+ * overrides that default with a resolved template (e.g. `{{score_1_output}}`)
+ * pointing at whichever step's output is actually meant for review.
+ */
+export function resolveHumanPauseContent(
+  node: HumanPauseNode,
+  context: ExecutionContext,
+  previousOutput: string
+): string {
+  return node.config.content ? resolveTemplate(node.config.content, context) : previousOutput
+}
+
+/**
  * Waits for a human approval decision stored in the `human_approvals` table.
  * Falls back to auto-approve when no runId is in context (CLI / eval mode).
  *
@@ -40,13 +57,14 @@ export async function executeHumanPause(
   previousOutput: string
 ): Promise<NodeExecutionResult> {
   const runId = context['__runId'] as string | undefined
+  const content = resolveHumanPauseContent(node, context, previousOutput)
 
   if (!runId) {
     const message = node.config.message
       ? resolveTemplate(node.config.message, context)
       : 'Paused for human review'
     console.log(`[human_pause] ${node.label}: "${message}" — auto-approving (no runId)`)
-    return { output: previousOutput, tokensUsed: 0 }
+    return { output: content, tokensUsed: 0 }
   }
 
   const supabase = createServerClient()
@@ -56,7 +74,7 @@ export async function executeHumanPause(
   // step_start handler). If none exists yet (fire-and-forget race), insert one.
   const { data: updated } = await supabase
     .from('run_steps')
-    .update({ status: 'waiting', output: previousOutput })
+    .update({ status: 'waiting', output: content })
     .eq('run_id', runId)
     .eq('node_id', node.id)
     .select('id')
@@ -67,7 +85,7 @@ export async function executeHumanPause(
       node_id: node.id,
       node_label: node.label,
       status: 'waiting',
-      output: previousOutput,
+      output: content,
     })
   }
 
@@ -101,7 +119,7 @@ export async function executeHumanPause(
       const output =
         typeof data.edited_output === 'string' && data.edited_output.trim()
           ? data.edited_output
-          : previousOutput
+          : content
       return { output, tokensUsed: 0 }
     }
   }

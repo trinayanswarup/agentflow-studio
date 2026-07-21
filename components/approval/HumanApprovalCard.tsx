@@ -102,11 +102,20 @@ export function HumanApprovalCard({ runId, pause, onDecision }: Props) {
           <button
             type="button"
             disabled={busy}
-            onClick={() => void submit('approve', hasEdits)}
+            onClick={() => void submit('approve', false)}
             className="rounded-lg bg-green-600 px-3.5 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-green-500 disabled:opacity-50"
-            title={hasEdits ? 'Approve with your edits' : 'Approve and continue'}
+            title="Approve and continue with the original content"
           >
-            {hasEdits ? 'Approve edits' : 'Approve'}
+            Approve
+          </button>
+          <button
+            type="button"
+            disabled={busy || !hasEdits}
+            onClick={() => void submit('approve', true)}
+            className="rounded-lg border border-accent-600 px-3.5 py-1.5 text-xs font-semibold text-accent-300 transition-colors hover:bg-accent-950/60 disabled:cursor-not-allowed disabled:opacity-40"
+            title={hasEdits ? 'Approve and continue with your edited content' : 'Edit the content above to enable this'}
+          >
+            Edit + Continue
           </button>
           <button
             type="button"

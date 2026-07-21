@@ -67,6 +67,11 @@ export const domainRiskDefinition: WorkflowDefinition = {
       config: {
         message:
           'High cybersecurity risk detected for {{input_1_output}}. An analyst should review before this is finalized.',
+        // Without this, the review card would default to previousOutput —
+        // this node sits right after the "High Risk?" condition, so that
+        // would be its raw "true"/"false" output, not the actual score/
+        // reasoning the analyst needs to review.
+        content: '{{score_1_output}}',
       },
     },
     {

@@ -63,6 +63,16 @@ export interface HumanPauseNode extends BaseNode {
   config: {
     /** Message template shown to the reviewer. */
     message?: string
+    /**
+     * Template for the content shown in the reviewable textarea. Defaults to
+     * the previous node's raw output when omitted — but that default is
+     * wrong whenever a human_pause sits directly after a `condition` node
+     * (its output is just "true"/"false"), so any workflow branching through
+     * a condition before a review step should set this explicitly, e.g.
+     * `{{score_1_output}}` to show the upstream score/reasoning instead of
+     * the condition's boolean.
+     */
+    content?: string
   }
 }
 
