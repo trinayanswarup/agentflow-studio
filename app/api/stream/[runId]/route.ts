@@ -72,6 +72,46 @@ export async function GET(
 
   const stream = new ReadableStream({
     start(controller) {
+      // The underlying controller can end up closed/errored from more than
+      // one direction: our own two completion paths below (.then/.catch),
+      // but also the runtime itself — e.g. the client's EventSource closes
+      // its connection immediately upon receiving a terminal event (run_error
+      // /run_complete), which can tear down the underlying stream before our
+      // own `controller.close()` runs, making even the FIRST call throw
+      // ERR_INVALID_STATE. Confirmed via repro: both a forced step_timeout
+      // and a human_pause timeout hit this because both paths involve a real
+      // delay (flushObservability's network flush, or the 5-minute/overridden
+      // poll) between the client seeing the terminal event and this code
+      // trying to close — plenty of time for the client to have already
+      // disconnected. `isStreamClosed` makes every close/error call after the
+      // first a no-op instead of a second attempt; wrapping the actual call in
+      // try/catch covers the case where even the *first* attempt fails because
+      // something outside this closure already tore the stream down.
+      let isStreamClosed = false
+
+      function closeStream(): void {
+        if (isStreamClosed) return
+        isStreamClosed = true
+        try {
+          controller.close()
+        } catch (err) {
+          console.error('[stream] controller.close() failed (stream likely already closed):', err)
+        }
+      }
+
+      function enqueueEvent(event: TraceEvent): boolean {
+        if (isStreamClosed) return false
+        try {
+          controller.enqueue(sseChunk(event))
+          return true
+        } catch {
+          // Controller already closed (client disconnected) — mark it so we
+          // don't keep attempting further enqueues/closes for this stream.
+          isStreamClosed = true
+          return false
+        }
+      }
+
       // Persistence is fire-and-forget from the client's perspective (failures
       // are logged, not fatal), but calls for the SAME run must resolve in the
       // order the events were emitted — an unserialized step_start INSERT can
@@ -80,14 +120,7 @@ export async function GET(
       // the row at status 'running'. Chaining onto one promise per run fixes that.
       let persistQueue: Promise<void> = Promise.resolve()
       runner.on('trace', (event: TraceEvent) => {
-        // Stream to client.
-        try {
-          controller.enqueue(sseChunk(event))
-        } catch {
-          // Controller already closed (client disconnected).
-          return
-        }
-
+        if (!enqueueEvent(event)) return
         persistQueue = persistQueue.then(() => persistEvent(supabase, runId, event))
       })
 
@@ -102,19 +135,13 @@ export async function GET(
             result.failedStep
           )
           await flushObservability()
-          controller.close()
+          closeStream()
         })
         .catch(async (error: unknown) => {
           const message = error instanceof Error ? error.message : String(error)
-          try {
-            controller.enqueue(
-              sseChunk({ type: 'run_error', error: message, timestamp: new Date().toISOString() })
-            )
-          } catch {
-            // ignore
-          }
+          enqueueEvent({ type: 'run_error', error: message, timestamp: new Date().toISOString() })
           await flushObservability()
-          controller.close()
+          closeStream()
         })
     },
   })

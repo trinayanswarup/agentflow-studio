@@ -242,7 +242,11 @@ export default function RunPage() {
           {runStatus === 'failed' && runId && (
             <button
               type="button"
-              onClick={() => router.push(`/agent?runId=${runId}`)}
+              onClick={() =>
+                router.push(
+                  `/agent?runId=${runId}${workflowName ? `&workflowName=${encodeURIComponent(workflowName)}` : ''}`
+                )
+              }
               className="flex-shrink-0 rounded-lg border border-red-700 bg-red-900/40 px-3 py-1 text-xs font-semibold text-red-200 transition-colors hover:bg-red-900/70"
             >
               Investigate failure →

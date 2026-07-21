@@ -384,6 +384,35 @@ describe('POST /api/agent/ask — run diagnosis', () => {
     expect(body.answer).toBe(VALID_DIAGNOSIS.summary)
   })
 
+  it('passes the workflow name from get_run_details through to the response, not derived from the LLM', async () => {
+    mockGetRunDetails.mockResolvedValue(
+      JSON.stringify({
+        runId: RUN_UUID,
+        workflowName: 'Lead Qualification',
+        status: 'failed',
+        failedStep: { nodeId: 'n1', nodeLabel: 'Score Check' },
+      })
+    )
+    mockGetGuardrailEvents.mockResolvedValue(JSON.stringify([]))
+
+    const req = makeRequest({ question: 'Why did this run fail?', runId: RUN_UUID })
+    const res = await POST(req)
+
+    expect(res.status).toBe(200)
+    const body = (await res.json()) as { workflowName?: string | null }
+    expect(body.workflowName).toBe('Lead Qualification')
+  })
+
+  it('returns workflowName: null when get_run_details did not include one', async () => {
+    mockGetRunDetails.mockResolvedValue(JSON.stringify({ runId: RUN_UUID, status: 'completed', failedStep: null }))
+
+    const req = makeRequest({ question: 'What happened?', runId: RUN_UUID })
+    const res = await POST(req)
+
+    const body = (await res.json()) as { workflowName?: string | null }
+    expect(body.workflowName).toBeNull()
+  })
+
   it('returns 500 with a clear error if callLLMStructured cannot produce a valid diagnosis', async () => {
     mockGetRunDetails.mockResolvedValue(JSON.stringify({ runId: RUN_UUID, status: 'completed', failedStep: null }))
     mockCallLLMStructured.mockRejectedValue(new Error('Structured output failed schema validation twice.'))

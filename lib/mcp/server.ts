@@ -69,6 +69,8 @@ export interface FailedStepSummary {
 
 export interface RunDetails {
   runId: string
+  /** The workflow this run belongs to, for display/reference — null only if the workflow row was deleted. */
+  workflowName: string | null
   status: string
   startedAt: string
   completedAt: string | null
@@ -211,7 +213,7 @@ export function detectLikelyCause(input: LikelyCauseInput): string | null {
 export async function getRunDetails(supabase: SupabaseClient, runId: string): Promise<RunDetails> {
   const { data: run, error: runError } = await supabase
     .from('runs')
-    .select('id, status, created_at, completed_at')
+    .select('id, status, created_at, completed_at, workflows(name)')
     .eq('id', runId)
     .maybeSingle()
 
@@ -224,6 +226,18 @@ export async function getRunDetails(supabase: SupabaseClient, runId: string): Pr
         `runs table row or a run URL (/run/<id>), not a workflow ID.`
     )
   }
+
+  // Embedded to-one relation (runs.workflow_id -> workflows.id). At runtime
+  // PostgREST returns a single object (each run belongs to exactly one
+  // workflow), but supabase-js's type-level select-string parser can't infer
+  // cardinality and always types an embed as an array — cast through
+  // `unknown` and accept either shape defensively.
+  const workflowsField = (
+    run as unknown as { workflows: { name: string } | { name: string }[] | null }
+  ).workflows
+  const workflowName = Array.isArray(workflowsField)
+    ? (workflowsField[0]?.name ?? null)
+    : (workflowsField?.name ?? null)
 
   const { data: stepRows, error: stepsError } = await supabase
     .from('run_steps')
@@ -309,6 +323,7 @@ export async function getRunDetails(supabase: SupabaseClient, runId: string): Pr
 
   return {
     runId: run.id,
+    workflowName,
     status: run.status,
     startedAt,
     completedAt,
@@ -418,6 +433,7 @@ export function createMcpServer(supabase: SupabaseClient): McpServer {
       description:
         'Get full step-by-step detail for one specific workflow run, identified by its run ID (not a ' +
         'workflow ID — a workflow can have many runs, a run ID identifies exactly one execution). Returns ' +
+        'the parent workflow\'s name (prefer this over the raw run ID when referring to the run in prose), ' +
         'overall status and duration, every step in execution order (node, status, input/output preview, ' +
         'exact error code and message if it failed, retry count, latency, timestamps), and — if the run ' +
         'failed — two separate fields: `failedStep` (which step reported the failure, the symptom) and ' +

@@ -165,7 +165,9 @@ const DIAGNOSIS_SYSTEM_PROMPT =
   '- confidence: exactly one of "low", "medium", or "high" (lowercase, no other words).\n' +
   '- recommendations: a JSON array of short strings — never a single string, never a markdown list.\n\n' +
   'Diagnose using ONLY the data provided: cite actual status values, node labels, timestamps, and error ' +
-  'messages verbatim where possible. If the run completed successfully, say so plainly in `summary` rather ' +
+  'messages verbatim where possible. If the run data includes a workflow name, refer to the run by that name ' +
+  'in `summary` (e.g. "the Lead Qualification run failed because...") rather than by its raw run ID — the ID ' +
+  'is not meaningful to a human reader. If the run completed successfully, say so plainly in `summary` rather ' +
   'than inventing a failure — set `failedStep` to null and `confidence` to "high".'
 
 // ── Structured diagnosis schema ─────────────────────────────────────────────
@@ -199,6 +201,13 @@ export interface AskAgentResponse {
   tokensUsed: number
   /** Present only when the question was a run diagnosis (an explicit or extracted runId was in play). */
   diagnosis?: Diagnosis
+  /**
+   * The diagnosed run's parent workflow name, straight from get_run_details
+   * (not the LLM) — deterministic, so the UI can display it reliably
+   * regardless of whether the model's own `summary` text happens to mention
+   * it. Present (possibly null) only alongside `diagnosis`.
+   */
+  workflowName?: string | null
 }
 
 // ── Groq client (lazy singleton, identical pattern to lib/llm/groq.ts) ────────
@@ -418,6 +427,8 @@ async function runAgentLoop(
 
 interface DiagnosisFlowResult {
   diagnosis: Diagnosis
+  /** From get_run_details, not the LLM — see AskAgentResponse.workflowName. */
+  workflowName: string | null
   toolsCalled: string[]
   toolInput: Record<string, unknown>
   toolOutput: string
@@ -455,12 +466,13 @@ async function runDiagnosisFlow(
   const runDetailsRaw = await callAgentToolDirect('get_run_details', runId, runTrace)
   toolsCalled.push('get_run_details')
 
-  let runDetails: { failedStep: unknown }
+  let runDetails: { failedStep: unknown; workflowName: unknown }
   try {
-    runDetails = JSON.parse(runDetailsRaw) as { failedStep: unknown }
+    runDetails = JSON.parse(runDetailsRaw) as { failedStep: unknown; workflowName: unknown }
   } catch {
     throw new Error(`get_run_details returned invalid JSON for run "${runId}" — cannot diagnose`)
   }
+  const workflowName = typeof runDetails.workflowName === 'string' ? runDetails.workflowName : null
 
   // Guardrail events are only relevant when there's a failure to explain.
   let guardrailEventsRaw: string | null = null
@@ -491,6 +503,7 @@ async function runDiagnosisFlow(
 
   return {
     diagnosis: data,
+    workflowName,
     toolsCalled,
     toolInput: { runId },
     toolOutput: guardrailEventsRaw ? `${runDetailsRaw}\n${guardrailEventsRaw}` : runDetailsRaw,
@@ -558,6 +571,7 @@ export async function POST(request: Request): Promise<NextResponse> {
       latencyMs: diagnosisResult.latencyMs,
       tokensUsed: diagnosisResult.tokensUsed,
       diagnosis: diagnosisResult.diagnosis,
+      workflowName: diagnosisResult.workflowName,
     }
     return NextResponse.json(response)
   }

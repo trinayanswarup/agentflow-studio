@@ -3,7 +3,20 @@ import type { ExecutionContext, HumanPauseNode, NodeExecutionResult } from '@/li
 import { resolveTemplate } from '@/lib/engine/context'
 
 const POLL_INTERVAL_MS = 2_000
-const MAX_POLLS = 150 // 5 minutes
+const DEFAULT_TIMEOUT_MS = 5 * 60_000
+
+/**
+ * How long a human_pause node waits for a decision before timing out.
+ * Overridable via WORKFLOW_HUMAN_PAUSE_TIMEOUT_MS (same NaN-safe pattern as
+ * getStepTimeoutMs/getCostCapUsd) — kept permanently rather than removed
+ * after testing, since a 5-minute wall clock wait is otherwise the only way
+ * to exercise this path, including in future regression testing.
+ */
+function getHumanPauseTimeoutMs(): number {
+  const raw = process.env.WORKFLOW_HUMAN_PAUSE_TIMEOUT_MS
+  const parsed = raw !== undefined ? Number(raw) : NaN
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : DEFAULT_TIMEOUT_MS
+}
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms))
@@ -59,8 +72,11 @@ export async function executeHumanPause(
 
   await supabase.from('runs').update({ status: 'paused' }).eq('id', runId)
 
-  // ── Poll human_approvals every 2 s (max 5 min) ───────────────────────────
-  for (let i = 0; i < MAX_POLLS; i++) {
+  const timeoutMs = getHumanPauseTimeoutMs()
+  const maxPolls = Math.ceil(timeoutMs / POLL_INTERVAL_MS)
+
+  // ── Poll human_approvals every 2 s (max timeoutMs) ───────────────────────
+  for (let i = 0; i < maxPolls; i++) {
     await sleep(POLL_INTERVAL_MS)
 
     const { data, error } = await supabase
@@ -89,5 +105,5 @@ export async function executeHumanPause(
     }
   }
 
-  throw new Error('Human pause timed out — no decision received within 5 minutes')
+  throw new Error(`Human pause timed out — no decision received within ${timeoutMs}ms`)
 }

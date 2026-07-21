@@ -164,7 +164,8 @@ export const getRunDetailsTool: Tool = {
   description:
     'Get full step-by-step detail for one specific workflow run, identified by its run ID (a run ID ' +
     'identifies exactly one execution — not a workflow ID, which is ambiguous across many runs). ' +
-    'Returns overall status/duration, every step with status, output preview, exact error code and ' +
+    'Returns the parent workflow\'s name (prefer this over the raw run ID when referring to the run in ' +
+    'prose), overall status/duration, every step with status, output preview, exact error code and ' +
     'message if it failed, retry count, and latency, plus — separately — which step reported the failure ' +
     '(failedStep) and a best-effort diagnosis of what upstream condition likely caused it (likelyCause). ' +
     'Always call this before answering any question about a specific run — never guess.',

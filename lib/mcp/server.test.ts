@@ -11,12 +11,19 @@ import {
 
 const RUN_ID = 'aaaabbbb-cccc-dddd-eeee-ffffffffffff'
 
-function makeRun(overrides: Partial<{ id: string; status: string; created_at: string; completed_at: string | null }> = {}) {
+function makeRun(overrides: Partial<{
+  id: string
+  status: string
+  created_at: string
+  completed_at: string | null
+  workflows: { name: string } | null
+}> = {}) {
   return {
     id: RUN_ID,
     status: 'completed',
     created_at: '2024-01-01T10:00:00.000Z',
     completed_at: '2024-01-01T10:00:05.000Z',
+    workflows: { name: 'Lead Qualification' },
     ...overrides,
   }
 }
@@ -119,6 +126,24 @@ describe('getRunDetails', () => {
     expect(result.steps).toHaveLength(2)
     expect(result.steps[0].nodeId).toBe('n1')
     expect(result.steps[1].nodeId).toBe('n2')
+  })
+
+  it('includes the parent workflow name from the embedded workflows relation', async () => {
+    const run = makeRun({ workflows: { name: 'CyberOps Domain Risk Check' } })
+    const supabase = makeSupabaseMock({ runs: [run], steps: [] })
+
+    const result = await getRunDetails(supabase, RUN_ID)
+
+    expect(result.workflowName).toBe('CyberOps Domain Risk Check')
+  })
+
+  it('returns workflowName: null when the workflow relation is absent (e.g. deleted workflow)', async () => {
+    const run = makeRun({ workflows: null })
+    const supabase = makeSupabaseMock({ runs: [run], steps: [] })
+
+    const result = await getRunDetails(supabase, RUN_ID)
+
+    expect(result.workflowName).toBeNull()
   })
 
   it('throws a descriptive, actionable error when the run does not exist', async () => {

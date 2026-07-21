@@ -16,6 +16,8 @@ interface Message {
   isError?: boolean
   /** Present only for run-diagnosis questions — rendered as a DiagnosisCard instead of a plain answer bubble. */
   diagnosis?: Diagnosis
+  /** The diagnosed run's parent workflow name, from the API (get_run_details) — not the LLM. */
+  workflowName?: string | null
 }
 
 // No hardcoded workflow UUIDs here — query_workflow_logs requires a real
@@ -112,6 +114,7 @@ function TraceSection({
 
 function DiagnosisCard({
   diagnosis,
+  workflowName,
   traceOpen,
   onToggleTrace,
   toolCalled,
@@ -120,6 +123,7 @@ function DiagnosisCard({
   tokensUsed,
 }: {
   diagnosis: Diagnosis
+  workflowName?: string | null
   traceOpen: boolean
   onToggleTrace: () => void
   toolCalled: string | null
@@ -130,7 +134,14 @@ function DiagnosisCard({
   return (
     <div className="max-w-[85%] rounded-xl rounded-tl-sm border border-accent-500/30 bg-gray-900 p-4">
       <div className="mb-3 flex items-center justify-between gap-2">
-        <span className="text-[11px] font-semibold uppercase tracking-wider text-accent-400">Diagnosis</span>
+        <div className="flex items-center gap-2">
+          <span className="text-[11px] font-semibold uppercase tracking-wider text-accent-400">Diagnosis</span>
+          {workflowName && (
+            <span className="rounded bg-gray-800 px-1.5 py-0.5 text-xs font-medium text-gray-300">
+              {workflowName}
+            </span>
+          )}
+        </div>
         <ConfidenceBadge confidence={diagnosis.confidence} />
       </div>
 
@@ -226,6 +237,7 @@ function AgentPageInner() {
           latencyMs: data.latencyMs,
           tokensUsed: data.tokensUsed,
           diagnosis: data.diagnosis,
+          workflowName: data.workflowName,
           traceOpen: false,
         },
       ])
@@ -258,7 +270,15 @@ function AgentPageInner() {
     const runId = searchParams.get('runId')
     if (runId && !autoSubmittedRef.current) {
       autoSubmittedRef.current = true
-      void ask(`What happened in the run ${runId} — why did it fail?`, runId)
+      const workflowName = searchParams.get('workflowName')
+      // Prefer the workflow's name over the raw UUID in the user-facing
+      // question text — the runId is still passed through separately below
+      // for the tool call to use. Falls back to the UUID only if the name
+      // wasn't available (e.g. a bare ?runId= link without it).
+      const question = workflowName
+        ? `Why did the last run of "${workflowName}" fail?`
+        : `What happened in the run ${runId} — why did it fail?`
+      void ask(question, runId)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams])
@@ -317,6 +337,7 @@ function AgentPageInner() {
             {msg.diagnosis ? (
               <DiagnosisCard
                 diagnosis={msg.diagnosis}
+                workflowName={msg.workflowName}
                 traceOpen={msg.traceOpen}
                 onToggleTrace={() => toggleTrace(msg.id)}
                 toolCalled={msg.toolCalled}
