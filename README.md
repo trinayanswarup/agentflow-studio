@@ -14,8 +14,10 @@ Built from scratch with no LangChain or orchestration framework. Traced, budgete
 
 ---
 
+## See it run
+
 ![Human pause approval flow](public/human-pause-demo.gif)
-_Full human-in-the-loop flow - approve, edit, or reject before a workflow continues._
+_Click to play — a full workflow run: search, LLM risk analysis, scoring, human review, and approval, end to end._
 
 ---
 
