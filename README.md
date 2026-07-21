@@ -1,8 +1,21 @@
 # AgentFlow Studio
 
-A visual AI workflow builder with a custom execution engine - traced, budgeted, validated, and regression-tested on every commit. Drag nodes onto a canvas, connect them, and run them. Built from scratch, no LangChain or orchestration framework.
+AgentFlow Studio
+
+A visual AI workflow builder with a custom execution engine, live tracing, human approval, production guardrails, and an AI debugging assistant.
+
+Build AI agents by dragging nodes onto a canvas. Search the web, analyze results with an LLM, validate the output, pause for human approval, and watch every step execute live.
+
+When a workflow fails, the debugging assistant investigates the actual run trace and guardrail events to explain what went wrong and recommend a fix - grounded in real execution data, not a guess.
+
+Built from scratch with no LangChain or orchestration framework. Traced, budgeted, validated, and regression-tested on every commit.
 
 **Live**: [agentflow-studio-six.vercel.app](https://agentflow-studio-six.vercel.app) · **Repo**: [github.com/trinayanswarup/agentflow-studio](https://github.com/trinayanswarup/agentflow-studio)
+
+---
+
+![Human pause approval flow](public/human-pause-demo.gif)
+_Full human-in-the-loop flow - approve, edit, or reject before a workflow continues._
 
 ---
 
@@ -21,7 +34,7 @@ _Workflows pause for human review. Approve the output, edit it, or reject and st
 _Upload a PDF or Word doc, ask questions, get answers with cited source excerpts._
 
 ![Diagnosis card](public/screenshot-diagnosis.png)
-_Ask Agent investigates a failed run and returns a structured diagnosis — never guessing when a recorded fact is available._
+_Ask Agent investigates a failed run and returns a structured diagnosis - never guessing when a recorded fact is available._
 
 ---
 
