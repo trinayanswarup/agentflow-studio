@@ -1,7 +1,8 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
-import type { AskAgentResponse } from '@/app/api/agent/ask/route'
+import { Suspense, useEffect, useRef, useState } from 'react'
+import { useSearchParams } from 'next/navigation'
+import type { AskAgentResponse, Diagnosis } from '@/app/api/agent/ask/route'
 
 interface Message {
   id: string
@@ -13,6 +14,8 @@ interface Message {
   tokensUsed: number
   traceOpen: boolean
   isError?: boolean
+  /** Present only for run-diagnosis questions — rendered as a DiagnosisCard instead of a plain answer bubble. */
+  diagnosis?: Diagnosis
 }
 
 // No hardcoded workflow UUIDs here — query_workflow_logs requires a real
@@ -24,6 +27,12 @@ const EXAMPLES = [
   'What node types are supported?',
 ]
 
+const CONFIDENCE_STYLES: Record<Diagnosis['confidence'], string> = {
+  low: 'bg-red-500/10 text-red-300 ring-1 ring-inset ring-red-500/20',
+  medium: 'bg-yellow-400/10 text-yellow-300 ring-1 ring-inset ring-yellow-400/20',
+  high: 'bg-green-500/10 text-green-300 ring-1 ring-inset ring-green-500/20',
+}
+
 function Metric({ children }: { children: React.ReactNode }) {
   return (
     <span className="rounded bg-gray-800/70 px-1.5 py-0.5 font-mono text-[10px] tabular-nums text-gray-400">
@@ -32,20 +41,168 @@ function Metric({ children }: { children: React.ReactNode }) {
   )
 }
 
-export default function AgentPage() {
+function ConfidenceBadge({ confidence }: { confidence: Diagnosis['confidence'] }) {
+  return (
+    <span className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${CONFIDENCE_STYLES[confidence]}`}>
+      {confidence} confidence
+    </span>
+  )
+}
+
+/** Shared "How I got this" collapsible — used by both plain answers and diagnosis cards. */
+function TraceSection({
+  open,
+  onToggle,
+  toolCalled,
+  toolInput,
+  latencyMs,
+  tokensUsed,
+}: {
+  open: boolean
+  onToggle: () => void
+  toolCalled: string | null
+  toolInput: Record<string, unknown> | null
+  latencyMs: number
+  tokensUsed: number
+}) {
+  return (
+    <div className="mt-3 border-t border-gray-800 pt-3">
+      <button
+        type="button"
+        onClick={onToggle}
+        className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-gray-500 transition-colors hover:text-gray-300"
+      >
+        <span>{open ? '▾' : '▸'}</span>
+        How I got this
+      </button>
+
+      {open && (
+        <div className="mt-2 flex flex-col gap-2 rounded-lg border border-gray-700 bg-gray-800/40 p-3">
+          <p className="text-xs text-gray-300">
+            {toolCalled ? (
+              <>
+                Tool{toolCalled.includes(' + ') ? 's' : ''} used:{' '}
+                <span className="font-mono text-accent-300">{toolCalled}</span>
+              </>
+            ) : (
+              'Answered directly — no tool needed.'
+            )}
+          </p>
+
+          {toolInput && Object.keys(toolInput).length > 0 && (
+            <div className="flex flex-col gap-1">
+              <span className="text-[10px] font-semibold uppercase tracking-wider text-gray-500">Input</span>
+              {Object.entries(toolInput).map(([key, value]) => (
+                <div key={key} className="font-mono text-[11px] leading-relaxed text-gray-400">
+                  <span className="text-gray-500">{key}:</span> <span className="text-gray-300">{String(value)}</span>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <div className="flex gap-1.5 pt-1">
+            <Metric>{latencyMs}ms</Metric>
+            <Metric>{tokensUsed} tok</Metric>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function DiagnosisCard({
+  diagnosis,
+  traceOpen,
+  onToggleTrace,
+  toolCalled,
+  toolInput,
+  latencyMs,
+  tokensUsed,
+}: {
+  diagnosis: Diagnosis
+  traceOpen: boolean
+  onToggleTrace: () => void
+  toolCalled: string | null
+  toolInput: Record<string, unknown> | null
+  latencyMs: number
+  tokensUsed: number
+}) {
+  return (
+    <div className="max-w-[85%] rounded-xl rounded-tl-sm border border-accent-500/30 bg-gray-900 p-4">
+      <div className="mb-3 flex items-center justify-between gap-2">
+        <span className="text-[11px] font-semibold uppercase tracking-wider text-accent-400">Diagnosis</span>
+        <ConfidenceBadge confidence={diagnosis.confidence} />
+      </div>
+
+      <div className="mb-3">
+        <div className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-gray-500">Summary</div>
+        <p className="text-sm leading-relaxed text-gray-200">{diagnosis.summary}</p>
+      </div>
+
+      <div className="mb-3 flex items-center gap-2 text-xs">
+        <span className="font-semibold uppercase tracking-wider text-gray-500">Failed step:</span>
+        {diagnosis.failedStep ? (
+          <span className="font-mono text-red-300">{diagnosis.failedStep}</span>
+        ) : (
+          <span className="text-gray-400">none — run succeeded</span>
+        )}
+      </div>
+
+      {diagnosis.evidence.length > 0 && (
+        <div className="mb-3">
+          <div className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-gray-500">Evidence</div>
+          <ul className="list-disc space-y-1 pl-4 text-xs leading-relaxed text-gray-300">
+            {diagnosis.evidence.map((item, i) => (
+              <li key={i}>{item}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      <div className="mb-3">
+        <div className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-gray-500">Likely cause</div>
+        <p className="text-xs leading-relaxed text-gray-300">{diagnosis.likelyCause}</p>
+      </div>
+
+      {diagnosis.recommendations.length > 0 && (
+        <div>
+          <div className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-gray-500">Recommendations</div>
+          <ul className="list-disc space-y-1 pl-4 text-xs leading-relaxed text-gray-300">
+            {diagnosis.recommendations.map((item, i) => (
+              <li key={i}>{item}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      <TraceSection
+        open={traceOpen}
+        onToggle={onToggleTrace}
+        toolCalled={toolCalled}
+        toolInput={toolInput}
+        latencyMs={latencyMs}
+        tokensUsed={tokensUsed}
+      />
+    </div>
+  )
+}
+
+function AgentPageInner() {
+  const searchParams = useSearchParams()
   const [messages, setMessages] = useState<Message[]>([])
   const [question, setQuestion] = useState('')
   const [asking, setAsking] = useState(false)
 
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
+  const autoSubmittedRef = useRef(false)
 
   // Scroll to newest message.
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages.length, asking])
 
-  async function ask(q: string) {
+  async function ask(q: string, runId?: string) {
     const trimmed = q.trim()
     if (!trimmed || asking) return
     setQuestion('')
@@ -54,7 +211,7 @@ export default function AgentPage() {
       const res = await fetch('/api/agent/ask', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ question: trimmed }),
+        body: JSON.stringify(runId ? { question: trimmed, runId } : { question: trimmed }),
       })
       const data = (await res.json()) as AskAgentResponse & { error?: string }
       if (!res.ok) throw new Error(data.error ?? 'Request failed')
@@ -68,6 +225,7 @@ export default function AgentPage() {
           toolInput: data.toolInput,
           latencyMs: data.latencyMs,
           tokensUsed: data.tokensUsed,
+          diagnosis: data.diagnosis,
           traceOpen: false,
         },
       ])
@@ -91,6 +249,19 @@ export default function AgentPage() {
       setTimeout(() => inputRef.current?.focus(), 50)
     }
   }
+
+  // "Investigate failure" lands here with ?runId=<uuid> — auto-submit a
+  // diagnosis question immediately so the user sees the investigation
+  // running without typing anything. Guarded by a ref (not just the
+  // dependency array) so React's dev-mode double-effect doesn't fire it twice.
+  useEffect(() => {
+    const runId = searchParams.get('runId')
+    if (runId && !autoSubmittedRef.current) {
+      autoSubmittedRef.current = true
+      void ask(`What happened in the run ${runId} — why did it fail?`, runId)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams])
 
   function toggleTrace(id: string) {
     setMessages((prev) => prev.map((m) => (m.id === id ? { ...m, traceOpen: !m.traceOpen } : m)))
@@ -142,61 +313,37 @@ export default function AgentPage() {
               </div>
             </div>
 
-            {/* Answer bubble */}
-            <div
-              className={`max-w-[85%] rounded-xl rounded-tl-sm border px-4 py-3 ${
-                msg.isError ? 'border-red-900/60 bg-red-950/30' : 'border-gray-800 bg-gray-900'
-              }`}
-            >
-              <p className="whitespace-pre-wrap text-sm leading-relaxed text-gray-200">{msg.answer}</p>
+            {/* Answer: structured diagnosis card, or plain answer bubble */}
+            {msg.diagnosis ? (
+              <DiagnosisCard
+                diagnosis={msg.diagnosis}
+                traceOpen={msg.traceOpen}
+                onToggleTrace={() => toggleTrace(msg.id)}
+                toolCalled={msg.toolCalled}
+                toolInput={msg.toolInput}
+                latencyMs={msg.latencyMs}
+                tokensUsed={msg.tokensUsed}
+              />
+            ) : (
+              <div
+                className={`max-w-[85%] rounded-xl rounded-tl-sm border px-4 py-3 ${
+                  msg.isError ? 'border-red-900/60 bg-red-950/30' : 'border-gray-800 bg-gray-900'
+                }`}
+              >
+                <p className="whitespace-pre-wrap text-sm leading-relaxed text-gray-200">{msg.answer}</p>
 
-              {!msg.isError && (
-                <div className="mt-3 border-t border-gray-800 pt-3">
-                  <button
-                    type="button"
-                    onClick={() => toggleTrace(msg.id)}
-                    className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-gray-500 transition-colors hover:text-gray-300"
-                  >
-                    <span>{msg.traceOpen ? '▾' : '▸'}</span>
-                    How I got this
-                  </button>
-
-                  {msg.traceOpen && (
-                    <div className="mt-2 flex flex-col gap-2 rounded-lg border border-gray-700 bg-gray-800/40 p-3">
-                      <p className="text-xs text-gray-300">
-                        {msg.toolCalled ? (
-                          <>
-                            Tool used:{' '}
-                            <span className="font-mono text-accent-300">{msg.toolCalled}</span>
-                          </>
-                        ) : (
-                          'Answered directly — no tool needed.'
-                        )}
-                      </p>
-
-                      {msg.toolInput && Object.keys(msg.toolInput).length > 0 && (
-                        <div className="flex flex-col gap-1">
-                          <span className="text-[10px] font-semibold uppercase tracking-wider text-gray-500">
-                            Input
-                          </span>
-                          {Object.entries(msg.toolInput).map(([key, value]) => (
-                            <div key={key} className="font-mono text-[11px] leading-relaxed text-gray-400">
-                              <span className="text-gray-500">{key}:</span>{' '}
-                              <span className="text-gray-300">{String(value)}</span>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-
-                      <div className="flex gap-1.5 pt-1">
-                        <Metric>{msg.latencyMs}ms</Metric>
-                        <Metric>{msg.tokensUsed} tok</Metric>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
+                {!msg.isError && (
+                  <TraceSection
+                    open={msg.traceOpen}
+                    onToggle={() => toggleTrace(msg.id)}
+                    toolCalled={msg.toolCalled}
+                    toolInput={msg.toolInput}
+                    latencyMs={msg.latencyMs}
+                    tokensUsed={msg.tokensUsed}
+                  />
+                )}
+              </div>
+            )}
           </div>
         ))}
 
@@ -238,5 +385,17 @@ export default function AgentPage() {
         </div>
       </div>
     </div>
+  )
+}
+
+// useSearchParams() opts the page out of static rendering unless wrapped in
+// Suspense — this page is fully client-rendered anyway (no server data), so
+// the fallback is never visibly shown in practice, but Next.js requires the
+// boundary to exist.
+export default function AgentPage() {
+  return (
+    <Suspense fallback={null}>
+      <AgentPageInner />
+    </Suspense>
   )
 }

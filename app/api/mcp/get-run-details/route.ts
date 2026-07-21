@@ -1,25 +1,25 @@
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import { createServerClient } from '@/lib/supabase/server'
-import { queryWorkflowLogs } from '@/lib/mcp/server'
+import { getRunDetails } from '@/lib/mcp/server'
 
 const requestSchema = z.object({
-  workflowId: z.string().uuid(),
+  runId: z.string().uuid(),
 })
 
 /**
- * POST /api/mcp/query-workflow-logs
+ * POST /api/mcp/get-run-details
  *
- * Thin API route that calls the MCP `query_workflow_logs` tool function
+ * Thin API route that calls the MCP `get_run_details` tool function
  * directly (no transport overhead) and returns the result as JSON.
  *
- * Request body: { "workflowId": "<uuid>" }
- * Response:     { "logs": RunLog[] }
+ * Request body: { "runId": "<uuid>" }
+ * Response:     RunDetails (see lib/mcp/server.ts)
  *
  * Manual test with curl:
- *   curl -s -X POST http://localhost:3000/api/mcp/query-workflow-logs \
+ *   curl -s -X POST http://localhost:3000/api/mcp/get-run-details \
  *     -H "Content-Type: application/json" \
- *     -d '{"workflowId":"<your-workflow-uuid>"}' | jq .
+ *     -d '{"runId":"<your-run-uuid>"}' | jq .
  */
 export async function POST(request: Request) {
   let body: unknown
@@ -31,17 +31,14 @@ export async function POST(request: Request) {
 
   const parsed = requestSchema.safeParse(body)
   if (!parsed.success) {
-    return NextResponse.json(
-      { error: z.prettifyError(parsed.error) },
-      { status: 400 }
-    )
+    return NextResponse.json({ error: z.prettifyError(parsed.error) }, { status: 400 })
   }
 
   const supabase = createServerClient()
 
   try {
-    const logs = await queryWorkflowLogs(supabase, parsed.data.workflowId)
-    return NextResponse.json({ logs })
+    const details = await getRunDetails(supabase, parsed.data.runId)
+    return NextResponse.json(details)
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err)
     return NextResponse.json({ error: message }, { status: 500 })

@@ -72,6 +72,13 @@ export async function GET(
 
   const stream = new ReadableStream({
     start(controller) {
+      // Persistence is fire-and-forget from the client's perspective (failures
+      // are logged, not fatal), but calls for the SAME run must resolve in the
+      // order the events were emitted — an unserialized step_start INSERT can
+      // otherwise land in Supabase after its own step_done/step_error UPDATE
+      // already ran and no-opped (no matching row yet), permanently orphaning
+      // the row at status 'running'. Chaining onto one promise per run fixes that.
+      let persistQueue: Promise<void> = Promise.resolve()
       runner.on('trace', (event: TraceEvent) => {
         // Stream to client.
         try {
@@ -81,8 +88,7 @@ export async function GET(
           return
         }
 
-        // Persist to Supabase (fire-and-forget — failures are logged, not fatal).
-        void persistEvent(supabase, runId, event)
+        persistQueue = persistQueue.then(() => persistEvent(supabase, runId, event))
       })
 
       runner
@@ -174,25 +180,42 @@ async function persistEvent(
         break
 
       case 'step_error':
+        // Guard on ['running','waiting'] rather than just 'running' — a
+        // human_pause node's row is already 'waiting' (written directly by
+        // executeHumanPause) by the time a rejection/timeout throws and lands
+        // here as a generic step_error, so a 'running'-only guard would miss
+        // the row entirely and leave it stuck at 'waiting' forever.
         await supabase
           .from('run_steps')
           .update({
             status: 'error',
             error: event.error,
+            error_code: event.code ?? null,
             latency_ms: event.latencyMs,
           })
           .eq('run_id', runId)
           .eq('node_id', event.nodeId)
-          .eq('status', 'running')
+          .in('status', ['running', 'waiting'])
         break
 
       case 'step_timeout':
         await supabase
           .from('run_steps')
-          .update({ status: 'error', error: `Step timed out after ${event.timeoutMs}ms` })
+          .update({
+            status: 'error',
+            error: `Step timed out after ${event.timeoutMs}ms`,
+            error_code: 'STEP_TIMEOUT',
+          })
           .eq('run_id', runId)
           .eq('node_id', event.nodeId)
-          .eq('status', 'running')
+          .in('status', ['running', 'waiting'])
+        await supabase.from('guardrail_events').insert({
+          run_id: runId,
+          node_id: event.nodeId,
+          node_label: event.label,
+          event_type: 'step_timeout',
+          timeout_ms: event.timeoutMs,
+        })
         break
 
       case 'budget_exceeded':
@@ -201,10 +224,43 @@ async function persistEvent(
           .update({
             status: 'error',
             error: `Budget exceeded: $${event.totalCostUsd.toFixed(4)} > cap $${event.capUsd}`,
+            error_code: 'BUDGET_EXCEEDED',
           })
           .eq('run_id', runId)
           .eq('node_id', event.nodeId)
-          .eq('status', 'running')
+          .in('status', ['running', 'waiting'])
+        await supabase.from('guardrail_events').insert({
+          run_id: runId,
+          node_id: event.nodeId,
+          node_label: event.label,
+          event_type: 'budget_exceeded',
+          total_cost_usd: event.totalCostUsd,
+          cap_usd: event.capUsd,
+        })
+        break
+
+      case 'validation_retry':
+        await supabase.from('guardrail_events').insert({
+          run_id: runId,
+          node_id: event.nodeId,
+          node_label: event.label,
+          event_type: 'validation_retry',
+          error_message: event.error,
+          output_preview: event.outputPreview,
+        })
+        break
+
+      case 'backoff_retry':
+        await supabase.from('guardrail_events').insert({
+          run_id: runId,
+          node_id: event.nodeId,
+          node_label: event.label,
+          event_type: 'backoff_retry',
+          attempt: event.attempt,
+          delay_ms: event.delayMs,
+          http_status: event.httpStatus,
+          error_message: event.error,
+        })
         break
 
       case 'human_pause':
@@ -232,9 +288,29 @@ async function persistEvent(
           .from('runs')
           .update({ status: 'failed', completed_at: new Date().toISOString() })
           .eq('id', runId)
+        await cancelOrphanedSteps(supabase, runId)
         break
     }
   } catch (err) {
     console.error('[stream] Supabase persist failed for event', event.type, err)
   }
+}
+
+/**
+ * Marks any run_steps row still 'running' or 'waiting' as 'cancelled' once a
+ * run has failed. Every persistEvent call for this run is awaited in emission
+ * order (see the persistQueue chain above), so by the time this runs, every
+ * step_start this run will ever produce has already been inserted — any row
+ * still non-terminal genuinely never got a step_done/step_error/step_timeout
+ * for it and would otherwise be stuck 'running' forever.
+ */
+async function cancelOrphanedSteps(
+  supabase: ReturnType<typeof createServerClient>,
+  runId: string
+): Promise<void> {
+  await supabase
+    .from('run_steps')
+    .update({ status: 'cancelled', error: 'Run failed before this step finished.' })
+    .eq('run_id', runId)
+    .in('status', ['running', 'waiting'])
 }

@@ -237,8 +237,17 @@ export default function RunPage() {
 
       {/* Error banner */}
       {errorMessage && (
-        <div className="flex-shrink-0 border-b border-red-900 bg-red-950 px-4 py-2 text-sm text-red-300">
-          ❌ {errorMessage}
+        <div className="flex flex-shrink-0 items-center justify-between gap-3 border-b border-red-900 bg-red-950 px-4 py-2 text-sm text-red-300">
+          <span>❌ {errorMessage}</span>
+          {runStatus === 'failed' && runId && (
+            <button
+              type="button"
+              onClick={() => router.push(`/agent?runId=${runId}`)}
+              className="flex-shrink-0 rounded-lg border border-red-700 bg-red-900/40 px-3 py-1 text-xs font-semibold text-red-200 transition-colors hover:bg-red-900/70"
+            >
+              Investigate failure →
+            </button>
+          )}
         </div>
       )}
 

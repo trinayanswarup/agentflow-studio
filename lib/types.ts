@@ -160,6 +160,8 @@ export type TraceEvent =
       nodeId: string
       label: string
       error: string
+      /** Preview of the model output that failed validation — for failure diagnosis. */
+      outputPreview: string
       timestamp: string
     }
   | {
@@ -170,6 +172,8 @@ export type TraceEvent =
       attempt: number
       delayMs: number
       error: string
+      /** HTTP status that triggered the retry, if the error carried one (null for network/timeout errors). */
+      httpStatus: number | null
       timestamp: string
     }
   | {

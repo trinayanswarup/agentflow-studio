@@ -76,6 +76,7 @@ export async function withRetry<T>(fn: () => Promise<T>, options: RetryOptions =
 
       const delayMs = Math.round(baseDelayMs * 2 ** (attempt - 1) + random() * baseDelayMs)
       const message = errorMessage(error)
+      const httpStatus = extractStatusCode(error) ?? null
 
       emitGuardrailTraceEvent((ctx) => ({
         type: 'backoff_retry',
@@ -84,9 +85,10 @@ export async function withRetry<T>(fn: () => Promise<T>, options: RetryOptions =
         attempt,
         delayMs,
         error: message,
+        httpStatus,
         timestamp: new Date().toISOString(),
       }))
-      recordEvent('backoff_retry', { attempt, delayMs, error: message })
+      recordEvent('backoff_retry', { attempt, delayMs, error: message, httpStatus })
 
       await sleep(delayMs)
     }

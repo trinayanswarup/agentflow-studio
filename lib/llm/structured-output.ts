@@ -21,6 +21,9 @@ export class OutputValidationError extends Error {
   }
 }
 
+/** How much of the failed model output to keep for failure diagnosis. */
+const OUTPUT_PREVIEW_LENGTH = 300
+
 function errorMessage(error: unknown): string {
   return error instanceof Error ? error.message : String(error)
 }
@@ -81,14 +84,17 @@ export async function callLLMStructured<T>(
     return { data: first.data, result: first.result }
   }
 
+  const outputPreview = first.result.text.slice(0, OUTPUT_PREVIEW_LENGTH)
+
   emitGuardrailTraceEvent((ctx) => ({
     type: 'validation_retry',
     nodeId: ctx.nodeId,
     label: ctx.label,
     error: first.error ?? 'unknown validation error',
+    outputPreview,
     timestamp: new Date().toISOString(),
   }))
-  recordEvent('validation_retry', { error: first.error })
+  recordEvent('validation_retry', { error: first.error, outputPreview })
 
   const correctionPrompt = `${options.prompt}\n\nYour previous response failed validation: ${first.error}\nRespond again with ONLY the corrected, valid JSON — no markdown fences, no commentary.`
 

@@ -15,7 +15,7 @@ import { z } from 'zod'
 import { runTool, type Tool } from '@/lib/tools/registry'
 import { embed } from '@/lib/rag/embeddings'
 import { createServerClient } from '@/lib/supabase/server'
-import { queryWorkflowLogs } from '@/lib/mcp/server'
+import { getRunDetails, getGuardrailEvents } from '@/lib/mcp/server'
 
 // ── search_docs ───────────────────────────────────────────────────────────────
 
@@ -147,60 +147,108 @@ export const searchDocsTool: Tool = {
   },
 }
 
-// ── query_workflow_logs ───────────────────────────────────────────────────────
+// ── get_run_details ──────────────────────────────────────────────────────────
 
 /**
- * Wraps the MCP queryWorkflowLogs function from lib/mcp/server.ts.
+ * Wraps the MCP getRunDetails function from lib/mcp/server.ts.
  * Called directly — no HTTP round-trip through the MCP API route.
  */
-async function fetchWorkflowLogs(workflowId: string): Promise<string> {
+async function fetchRunDetails(runId: string): Promise<string> {
   const supabase = createServerClient()
-  const logs = await queryWorkflowLogs(supabase, workflowId)
-  return JSON.stringify(logs)
+  const details = await getRunDetails(supabase, runId)
+  return JSON.stringify(details)
 }
 
-export const queryWorkflowLogsTool: Tool = {
-  name: 'query_workflow_logs',
+export const getRunDetailsTool: Tool = {
+  name: 'get_run_details',
   description:
-    'Retrieve execution history for a specific workflow by its UUID. ' +
-    'Use this when the user asks about run history, recent failures, step latencies, ' +
-    'error messages, or execution results for a workflow they identify by a UUID. ' +
-    'IMPORTANT: if the user\'s message contains a UUID ' +
-    '(pattern: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx), extract it and pass it as workflowId. ' +
-    'Returns the last 10 runs with per-step status, output previews, errors, and latency.',
+    'Get full step-by-step detail for one specific workflow run, identified by its run ID (a run ID ' +
+    'identifies exactly one execution — not a workflow ID, which is ambiguous across many runs). ' +
+    'Returns overall status/duration, every step with status, output preview, exact error code and ' +
+    'message if it failed, retry count, and latency, plus — separately — which step reported the failure ' +
+    '(failedStep) and a best-effort diagnosis of what upstream condition likely caused it (likelyCause). ' +
+    'Always call this before answering any question about a specific run — never guess.',
   // Hand-written JSON Schema — omits format/pattern/additionalProperties because
   // llama-3.3 can refuse to generate a tool call when it sees JSON Schema keywords
   // it does not recognise (Groq's function-calling only supports a subset of JSON Schema).
   schema: z.object({
-    workflowId: z.string().describe('The workflow UUID to query'),
+    runId: z.string().describe('The run UUID to inspect'),
   }),
   input_schema: {
     type: 'object',
     properties: {
-      workflowId: {
+      runId: {
         type: 'string',
         description:
-          'The workflow UUID (format: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx). ' +
-          'Extract it directly from the user\'s message.',
+          'The run UUID (format: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx) identifying one execution. ' +
+          'Extract it directly from the user\'s message, or use the runId supplied with the request.',
       },
     },
-    required: ['workflowId'],
+    required: ['runId'],
   },
   execute: (input: unknown) => {
-    const { workflowId } = input as { workflowId: string }
-    return fetchWorkflowLogs(workflowId)
+    const { runId } = input as { runId: string }
+    return fetchRunDetails(runId)
+  },
+}
+
+// ── get_guardrail_events ─────────────────────────────────────────────────────
+
+/**
+ * Wraps the MCP getGuardrailEvents function from lib/mcp/server.ts.
+ * Called directly — no HTTP round-trip through the MCP API route.
+ */
+async function fetchGuardrailEvents(runId: string): Promise<string> {
+  const supabase = createServerClient()
+  const events = await getGuardrailEvents(supabase, runId)
+  return JSON.stringify(events)
+}
+
+export const getGuardrailEventsTool: Tool = {
+  name: 'get_guardrail_events',
+  description:
+    'Get every guardrail action taken during one specific workflow run: validation_retry (a structured ' +
+    'LLM output that failed schema validation), backoff_retry (a transient error retried with backoff), ' +
+    'budget_exceeded (the run was aborted for exceeding its cost cap), and step_timeout (a step exceeded ' +
+    'its timeout). Each event includes the node it happened on, attempt number, and full context — for ' +
+    'validation_retry, the validation error and a preview of the invalid model output; for backoff_retry, ' +
+    'the triggering HTTP status and whether the retry ultimately succeeded. Call this after ' +
+    'get_run_details when a run failed or the cause is unclear.',
+  schema: z.object({
+    runId: z.string().describe('The run UUID to inspect'),
+  }),
+  input_schema: {
+    type: 'object',
+    properties: {
+      runId: {
+        type: 'string',
+        description:
+          'The run UUID (format: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx) identifying one execution.',
+      },
+    },
+    required: ['runId'],
+  },
+  execute: (input: unknown) => {
+    const { runId } = input as { runId: string }
+    return fetchGuardrailEvents(runId)
   },
 }
 
 // ── Agent tool registry ────────────────────────────────────────────────────────
 
 /**
- * The two tools the Ask Agent offers to Groq.
- * Order matters: listed here is the order they appear in the function-calling
- * declaration sent to Groq. Keep search_docs first so the model sees it as
- * the default discovery action.
+ * All tools the Ask Agent conceptually has access to. app/api/agent/ask/route.ts
+ * decides per-question which of these are actually offered to Groq:
+ *   - General questions: only search_docs is declared (discovery-style
+ *     questions force it, everything else is 'auto') — get_run_details and
+ *     get_guardrail_events are irrelevant without a run ID in play.
+ *   - Run-diagnosis questions (a runId is present or extracted from the
+ *     question): get_run_details and get_guardrail_events are invoked
+ *     directly, deterministically — not offered to Groq as a choice at all,
+ *     since we already know exactly which tool is needed and with what
+ *     argument. See runDiagnosisFlow() in the route for why.
  */
-export const AGENT_TOOLS: Tool[] = [searchDocsTool, queryWorkflowLogsTool]
+export const AGENT_TOOLS: Tool[] = [searchDocsTool, getRunDetailsTool, getGuardrailEventsTool]
 
 /**
  * Look up an agent tool by name. Returns undefined rather than throwing —
