@@ -43,11 +43,83 @@ export async function GET(
     )
   }
 
-  // Fetch the workflow definition.
+  const runStatus = (run as { status: string }).status
+
+  // Guard: if the run is already terminal, replay the final event immediately
+  // rather than spawning a new WorkflowRunner (which would re-execute everything
+  // from scratch). This also handles EventSource auto-reconnect — the browser
+  // re-GETs this endpoint after any connection drop, including the natural close
+  // after run_complete.
+  if (runStatus === 'completed') {
+    const event = JSON.stringify({
+      type: 'run_complete',
+      output: '',   // actual output is stored client-side from the original stream
+      totalLatencyMs: 0,
+      totalTokens: 0,
+      timestamp: new Date().toISOString(),
+      restored: true,
+    })
+    return new Response(`data: ${event}\n\n`, {
+      headers: { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache' },
+    })
+  }
+
+  if (runStatus === 'failed') {
+    const event = JSON.stringify({
+      type: 'run_error',
+      error: 'Run previously failed',
+      timestamp: new Date().toISOString(),
+      restored: true,
+    })
+    return new Response(`data: ${event}\n\n`, {
+      headers: { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache' },
+    })
+  }
+
+  if (runStatus === 'paused') {
+    // Run is paused, waiting for human approval. Restore the pause card on the
+    // client by fetching the waiting run_step and re-emitting human_pause.
+    const { data: waitingStep } = await supabase
+      .from('run_steps')
+      .select('node_id, node_label, output')
+      .eq('run_id', runId)
+      .eq('status', 'waiting')
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+
+    if (waitingStep) {
+      // Fetch the workflow definition so we can find the node's message.
+      const { data: wfRow } = await supabase
+        .from('workflows')
+        .select('definition_json')
+        .eq('id', (run as { workflow_id: string }).workflow_id)
+        .single()
+      const pauseDef = isWorkflowDefinition(wfRow?.definition_json) ? wfRow!.definition_json : null
+      const pauseNode = pauseDef?.nodes.find((n) => n.id === waitingStep.node_id)
+      const message =
+        (pauseNode?.config as { message?: string } | undefined)?.message ?? 'Paused for human review'
+
+      const event = JSON.stringify({
+        type: 'human_pause',
+        nodeId: waitingStep.node_id as string,
+        label: (waitingStep.node_label ?? 'Review') as string,
+        message,
+        previousOutput: (waitingStep.output ?? '') as string,
+        timestamp: new Date().toISOString(),
+        restored: true,
+      })
+      return new Response(`data: ${event}\n\n`, {
+        headers: { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache' },
+      })
+    }
+  }
+
+  // Fetch the workflow definition (only reached for status 'running' or 'pending').
   const { data: workflowRow, error: wfError } = await supabase
     .from('workflows')
     .select('definition_json')
-    .eq('id', run.workflow_id)
+    .eq('id', (run as { workflow_id: string }).workflow_id)
     .single()
 
   if (wfError || !workflowRow) {
@@ -69,6 +141,7 @@ export async function GET(
     workflowId: (run as { workflow_id: string }).workflow_id,
     source: 'editor',
   })
+
 
   const stream = new ReadableStream({
     start(controller) {

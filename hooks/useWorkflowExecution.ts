@@ -46,6 +46,11 @@ export function useWorkflowExecution(): UseWorkflowExecutionResult {
   const [runId, setRunId] = useState<string | null>(null)
   const [pendingHumanPause, setPendingHumanPause] = useState<PendingHumanPause | null>(null)
   const esRef = useRef<EventSource | null>(null)
+  // Track whether run_complete was received so onerror doesn't trample it.
+  // EventSource fires onerror when the server closes the stream after a
+  // successful run_complete — without this guard, that sets runStatus back
+  // to 'failed' and wipes the final output.
+  const runCompletedRef = useRef(false)
 
   useEffect(() => () => { esRef.current?.close() }, [])
 
@@ -61,6 +66,7 @@ export function useWorkflowExecution(): UseWorkflowExecutionResult {
 
   const reset = useCallback(() => {
     esRef.current?.close()
+    runCompletedRef.current = false
     setNodeStates(new Map())
     setTraceEvents([])
     setFinalOutput(null)
@@ -82,6 +88,7 @@ export function useWorkflowExecution(): UseWorkflowExecutionResult {
     setTotalLatencyMs(0)
     setRunId(null)
     setPendingHumanPause(null)
+    runCompletedRef.current = false
     setRunStatus('starting')
 
     let activeRunId: string
@@ -165,14 +172,22 @@ export function useWorkflowExecution(): UseWorkflowExecutionResult {
           })
           break
 
-        case 'run_complete':
-          setFinalOutput(event.output)
-          setTotalTokens(event.totalTokens)
-          setTotalLatencyMs(event.totalLatencyMs)
+        case 'run_complete': {
+          runCompletedRef.current = true
+          // 'restored: true' means the stream route replayed this event on
+          // EventSource reconnect — the client already has the real output from
+          // the original stream, so don't overwrite it with the placeholder ''.
+          const isRestored = (event as unknown as { restored?: boolean }).restored
+          if (!isRestored) {
+            setFinalOutput(event.output)
+            setTotalTokens(event.totalTokens)
+            setTotalLatencyMs(event.totalLatencyMs)
+          }
           setRunStatus('completed')
           setPendingHumanPause(null)
           es.close()
           break
+        }
 
         case 'run_error':
           setErrorMessage(event.error)
@@ -184,9 +199,24 @@ export function useWorkflowExecution(): UseWorkflowExecutionResult {
     }
 
     es.onerror = () => {
-      setRunStatus('failed')
-      setErrorMessage('SSE connection lost')
-      es.close()
+      // EventSource fires onerror in two different situations:
+      //   1. The server closed the stream after a successful run_complete —
+      //      this is NOT a real error; ignore it so we don't trample 'completed'.
+      //   2. The connection genuinely dropped mid-run (network error, timeout).
+      // We distinguish them by checking whether run_complete was already received.
+      if (runCompletedRef.current) {
+        // Normal closure after a successful run — nothing to do.
+        es.close()
+        return
+      }
+      // If we're in human_pause and the EventSource briefly goes to CONNECTING
+      // state (it auto-reconnects), don't treat that as a failure either.
+      // Only mark failed if the connection is definitively CLOSED.
+      if (es.readyState === EventSource.CLOSED) {
+        setRunStatus('failed')
+        setErrorMessage('SSE connection lost')
+        es.close()
+      }
     }
   }, [])
 
