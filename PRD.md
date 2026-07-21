@@ -50,6 +50,20 @@ Four pre-built workflows ship with the product:
 - **Document Q&A** — upload PDF or Word document; chunked, embedded, stored; ask questions and get answers with cited source excerpts
 - **PDF → workflow import** — upload a process or SOP document; Groq extracts the steps and generates a workflow on the canvas
 
+### Production engineering
+
+- **Observability** — every run traced end-to-end via Langfuse: one span per node, one generation per LLM call (model, prompt, response, tokens, latency). No-op when unconfigured.
+- **Guardrails** — structured output validated with Zod (one retry, then a clean failure); retries with exponential backoff on transient errors; per-run cost caps; per-step timeouts.
+- **Eval regression suite** — golden test cases including dedicated cases verifying the guardrails themselves fire correctly. Mock cases run in CI on every push with zero API keys; live cases run on demand.
+
+### Ask Agent — failure-debugging assistant
+
+- A chat interface where the agent decides which tool to call based on the question — genuine Groq tool-use, not hardcoded routing
+- **Discovery**: "Do you have a workflow for X?" → searches saved workflows semantically
+- **Diagnosis**: "Why did run [id] fail?" → the agent is required to read the run's actual execution data via an MCP-compliant tool before answering, pulls any recorded guardrail events, and returns a structured diagnosis — Summary, Evidence, Likely Cause, Confidence, Recommendations — never speculating when a recorded fact is available
+- An "Investigate failure" button on any failed run jumps straight into a pre-loaded diagnosis
+- Built using the Model Context Protocol — tool definitions are MCP-compliant (proper schemas, annotations); called directly within the app due to a serverless hosting constraint (see README architecture section)
+
 ### Utilities
 
 - **Workflow Insights** — run counts, avg completion time, step failure rates across all workflows
@@ -74,6 +88,8 @@ Four pre-built workflows ship with the product:
 
 ## Tools
 
+**Workflow engine tools** (used inside `tool_call`/`llm_call` nodes):
+
 | Tool              | Purpose                                          |
 | ----------------- | ------------------------------------------------ |
 | `web_search`      | Tavily API — semantic web search                 |
@@ -81,6 +97,14 @@ Four pre-built workflows ship with the product:
 | `extract_json`    | Extracts a value from JSON by dot-path           |
 | `send_webhook`    | HTTP POST to any URL with a JSON body            |
 | `evaluate_output` | LLM-as-judge — scores output 1–10 with reasoning |
+
+**Ask Agent tools** (a separate registry, for the diagnosis feature):
+
+| Tool                   | Purpose                                                                                                                                   |
+| ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| `search_docs`          | Semantic search over saved workflows                                                                                                      |
+| `get_run_details`      | Full execution trace for a run — status, per-step timing, error, and a distinction between the step that failed and what likely caused it |
+| `get_guardrail_events` | Recorded guardrail events for a run (timeout, budget exceeded, validation retry, backoff retry) with full context                         |
 
 ---
 
@@ -95,31 +119,34 @@ Four pre-built workflows ship with the product:
 | Embeddings       | Hugging Face sentence-transformers/all-MiniLM-L6-v2 (384-dim)       |
 | Vector search    | Supabase pgvector, ivfflat index, cosine similarity                 |
 | Document parsing | pdf-parse, mammoth                                                  |
+| Observability    | Langfuse                                                            |
+| Protocol         | Model Context Protocol (MCP) — @modelcontextprotocol/sdk            |
 | Database         | Supabase (PostgreSQL)                                               |
-| Validation       | Zod — all tool inputs and API route bodies                          |
-| Testing          | Vitest — 50+ tests, all offline                                     |
-| CI               | GitHub Actions — type check, build, lint, test on every push        |
+| Validation       | Zod — tool inputs, API route bodies, structured LLM outputs         |
+| Testing          | Vitest — 128+ unit/integration tests, 17 eval regression cases      |
+| CI               | GitHub Actions — type check, build, lint, unit tests, mock evals    |
 | Deploy           | Vercel                                                              |
 
 ---
 
 ## Screens
 
-| Screen       | URL             | Purpose                                                          |
-| ------------ | --------------- | ---------------------------------------------------------------- |
-| Landing      | `/`             | Product overview, feature cards, direct links to each capability |
-| Editor       | `/editor`       | Drag-and-drop workflow builder                                   |
-| Run          | `/run/[id]`     | Live trace panel, node highlighting, human approval UI           |
-| Templates    | `/templates`    | Template gallery with semantic search                            |
-| Library      | `/library`      | All saved workflows — open, run, share                           |
-| Documents    | `/documents`    | Upload docs, Q&A, import as workflow                             |
-| Analytics    | `/analytics`    | Workflow run insights and failure rates                          |
-| Share        | `/share/[slug]` | Public read-only workflow canvas                                 |
-| Eval         | `/eval`         | Test case runner with scoring                                    |
-| How it works | `/how-it-works` | Guided walkthrough for new users                                 |
+| Screen       | URL             | Purpose                                                                    |
+| ------------ | --------------- | -------------------------------------------------------------------------- |
+| Landing      | `/`             | Product overview, feature cards, direct links to each capability           |
+| Editor       | `/editor`       | Drag-and-drop workflow builder                                             |
+| Run          | `/run/[id]`     | Live trace panel, node highlighting, human approval, "Investigate failure" |
+| Templates    | `/templates`    | Template gallery with semantic search                                      |
+| Library      | `/library`      | All saved workflows — open, run, share                                     |
+| Documents    | `/documents`    | Upload docs, Q&A, import as workflow                                       |
+| Analytics    | `/analytics`    | Workflow run insights and failure rates                                    |
+| Share        | `/share/[slug]` | Public read-only workflow canvas                                           |
+| Eval         | `/eval`         | Test case runner with scoring                                              |
+| Ask Agent    | `/agent`        | Failure-debugging chat assistant                                           |
+| How it works | `/how-it-works` | Guided walkthrough for new users                                           |
 
 ---
 
 ## Non-goals
 
-No authentication, no multi-user support, no billing, no mobile-specific design. Single-user portfolio project.
+No authentication, no multi-user support, no billing, no mobile-specific design. Single-user portfolio project. RLS intentionally disabled on Supabase for this reason.

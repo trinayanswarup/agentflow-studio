@@ -17,7 +17,7 @@ const geistMono = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "AgentFlow Studio — Visual AI Workflow Builder",
+  title: "AgentFlow Studio - Visual AI Workflow Builder",
   description:
     "Drag nodes onto a canvas, wire them together, and run them. A custom TypeScript execution engine walks the graph, calls LLMs and tools, streams a live trace, and pauses for human review.",
 };
