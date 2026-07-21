@@ -1,6 +1,7 @@
 import { createServerClient } from '@/lib/supabase/server'
 import type { ExecutionContext, HumanPauseNode, NodeExecutionResult } from '@/lib/types'
 import { resolveTemplate } from '@/lib/engine/context'
+import { formatDuration } from '@/lib/utils/format-duration'
 
 const POLL_INTERVAL_MS = 2_000
 const DEFAULT_TIMEOUT_MS = 5 * 60_000
@@ -105,5 +106,5 @@ export async function executeHumanPause(
     }
   }
 
-  throw new Error(`Human pause timed out — no decision received within ${timeoutMs}ms`)
+  throw new Error(`Human pause timed out — no decision received within ${formatDuration(timeoutMs)}`)
 }
