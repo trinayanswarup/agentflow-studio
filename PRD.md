@@ -114,7 +114,7 @@ Four pre-built workflows ship with the product:
 | ---------------- | ------------------------------------------------------------------- |
 | Frontend         | Next.js 14, TypeScript, Tailwind CSS, React Flow                    |
 | Execution engine | TypeScript, Next.js API routes, SSE streaming                       |
-| LLM              | Groq llama-3.3-70b-versatile (primary), Gemini 2.5 Flash (fallback) |
+| LLM              | Groq openai/gpt-oss-120b (primary), Gemini 2.5 Flash (fallback)     |
 | Search           | Tavily API                                                          |
 | Embeddings       | Hugging Face sentence-transformers/all-MiniLM-L6-v2 (384-dim)       |
 | Vector search    | Supabase pgvector, ivfflat index, cosine similarity                 |

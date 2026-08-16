@@ -42,7 +42,7 @@ Components (`components/`) are purely presentational. They receive state via pro
 - `lib/mcp/server.ts`'s `detectLikelyCause()` priority order — reordering this reintroduces a confirmed diagnosis-accuracy bug (see CLAUDE.md)
 - The persistence serialization in `app/api/stream/[runId]/route.ts` — reverting to fire-and-forget reintroduces a confirmed race condition (see CLAUDE.md)
 - Existing Supabase table schemas — add columns only, never drop or rename
-- The `tool_use_failed` retry in `lib/llm/groq.ts` — this handles a real llama quirk, do not remove
+- The `tool_use_failed` retry in `lib/llm/groq.ts` — this handles a real GPT-OSS-120B quirk, do not remove
 - `lib/schemas/judge-score.ts` — kept shape-only deliberately; do not re-add strict numeric bounds
 
 ## Supabase clients

@@ -8,7 +8,7 @@ A visual AI workflow builder. Users drag nodes onto a canvas, connect them, and 
 
 - **Frontend**: Next.js 14 App Router, TypeScript, Tailwind CSS, React Flow
 - **Engine**: TypeScript, server-side API routes, SSE via ReadableStream
-- **LLM**: Groq llama-3.3-70b-versatile (primary), Gemini 2.5 Flash (fallback)
+- **LLM**: Groq openai/gpt-oss-120b (primary), Gemini 2.5 Flash (fallback)
 - **Search**: Tavily API only
 - **Embeddings**: Hugging Face sentence-transformers/all-MiniLM-L6-v2 (384-dim) via router.huggingface.co
 - **Vector search**: Supabase pgvector, ivfflat index, cosine similarity via <=> operator

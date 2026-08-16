@@ -55,7 +55,7 @@ For every workflow run (`WorkflowRunner.run()`), regardless of trigger:
 - **One generation per LLM call** (`callLLM()` in `lib/llm/groq.ts` — the single entry point
   used by `llm_call` nodes, the `evaluate_output` tool, and the eval runner's LLM-judge
   scoring), nested under whichever node span was active when the call was made. Records:
-  - `model` — `llama-3.3-70b-versatile`, or the Gemini fallback model if Groq failed
+  - `model` — `openai/gpt-oss-120b`, or the Gemini fallback model if Groq failed
   - `input` — `{ system, prompt }` sent to the model
   - `output` — the model's final text response
   - `usage` — total tokens, from the provider's API response

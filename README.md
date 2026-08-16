@@ -144,7 +144,7 @@ Separately - Ask Agent:
 
 **Diagnosis must prioritize recorded facts over speculation** - early versions of the failure-diagnosis assistant would sometimes give a confidently wrong answer, guessing at a cause from output shape even when a definitive, recorded guardrail event (like a timeout) was available. Fixed by giving recorded facts explicit priority over inference - a debugging tool that's confidently wrong is worse than one that admits uncertainty.
 
-**`tool_use_failed` retry** - `llama-3.3-70b-versatile` occasionally invents a fake tool name to format its final answer, which Groq rejects with a 400. The agent loop catches this and retries the same conversation without tools.
+**`tool_use_failed` retry** - `openai/gpt-oss-120b` occasionally invents a fake tool name to format its final answer, which Groq rejects with a 400. The agent loop catches this and retries the same conversation without tools.
 
 More decisions (loop guard, `AsyncLocalStorage` context propagation, Groq's JSON Schema subset limitations) documented in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
 
